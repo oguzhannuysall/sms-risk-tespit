@@ -25,7 +25,7 @@ KATEGORILER = {
 # --- 4. STREAMLIT ARAYÜZÜ ---
 st.set_page_config(page_title="SMS Phishing Tespit", page_icon="🛡️", layout="centered")
 
-st.title("🛡️ Akıllı SMS Oltalama (Phishing) Analizörü")
+st.title("🛡️ Akıllı SMS Oltalama Analizörü")
 st.markdown("""
 Bu sistem, Doğal Dil İşleme ve Makine Öğrenmesi kullanarak size gelen SMS'lerin 
 dolandırıcılık amacı taşıyıp taşımadığını saniyeler içinde analiz eder.
