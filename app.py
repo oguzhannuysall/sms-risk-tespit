@@ -194,6 +194,8 @@ def mesaji_analiz_et(mesaj_girdisi):
     gerekceler = []
     yakalanan_kelimeler = []
     risk_skoru = 0
+    kelime_oyunu_var = False  # UnboundLocalError hatasını önlemek için başlangıç değeri eklendi
+    
     mesaj_lower = mesaj_girdisi.lower()
     cozulmus_mesaj = kelime_oyunu_coz(mesaj_girdisi)
 
@@ -672,7 +674,7 @@ elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
         with col_giris2:
             girilen_sifre = st.text_input("🔑 Şifre:", type="password")
         with col_giris3:
-            st.write("") # Boşluk hizalama için
+            st.write("") 
             st.write("")
             giris_butonu = st.button("Giriş Yap", type="primary")
 
