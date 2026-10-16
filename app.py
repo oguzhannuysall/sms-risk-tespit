@@ -47,7 +47,7 @@ except ImportError:
     anthropic = None
 
 DB_YOLU = "sms_guvenlik.db"
-CLAUDE_MODEL = "claude-sonnet-5-5"
+CLAUDE_MODEL = "claude-sonnet-4-5"
 
 # ======================================================================
 # 1. SAYFA AYARLARI VE CSS
@@ -149,10 +149,11 @@ def veri_surumu():
 # 3. METİN NORMALLEŞTİRME (Türkçe İ düzeltmesi + akıllı leet çözümü)
 # ======================================================================
 LINK_REGEX = re.compile(
-    r"(https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.(?:com|net|org|tr|xyz|info|ly|co|gd|me|io|top|icu|click|site|online)\b)",
+    r"(https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.(?:com|net|org|tr|xyz|info|ly|co|gd|me|io|top|icu|click|site|online)\b(?:/\S*)?)",
     re.IGNORECASE)
 GIZLI_HARF_REGEX = re.compile(r"(?<=\b\w)[\.\-\_\s\*]+(?=\w\b)")
 LEET = str.maketrans({"4": "a", "3": "e", "1": "i", "0": "o", "5": "s", "7": "t"})
+TERS_LEET = {"a": "[a4]", "e": "[e3]", "i": "[i1ıİ]", "ı": "[ıi1I]", "o": "[o0]", "s": "[s5]", "t": "[t7]"}
 
 
 def tr_lower(s):
@@ -215,11 +216,11 @@ def ml_skoru(model, mesaj):
 # 5. KURAL KATMANI
 # ======================================================================
 KATEGORILER = {
-    "kargo": ["teslim edilemedi", "adres hatası", "adres hatasi", "adres yetersizliği", "adres yetersizligi", "adres eksikliği", "iade", "gümrük", "gumruk"],
+    "kargo": ["teslim edilemedi", "adres hatası", "adres hatasi", "adres yetersizliği", "adres yetersizligi", "adres eksikliği", "kargonuz", "iade", "gümrük", "gumruk"],
     "icra_hukuk": ["icra", "dava", "uzlaştırma", "uzlastirma", "adliye", "sevk", "hapis", "tazminat", "savcılık", "ceza", "hukuk", "bahis", "taciz", "soruşturma", "sorusturma", "uyap"],
     "banka_finans": ["bloke", "kredi kartı", "kredi karti", "hesabınıza", "şüpheli işlem", "supheli", "iptal", "papara", "aidat", "binance"],
     "odul_yardim": ["tebrikler", "hediye", "kazandınız", "kazandiniz", "askıda fatura", "ikramiye", "çekiliş", "bonus", "kupon", "destek paketi"],
-    "para_talebi": ["iban", "hesaba yatır", "ödeme", "odeme", "bedeli", "masraf", "para transferi", "borcunuzu"],
+    "para_talebi": ["iban", "hesaba yatır", "ödeme", "odeme", "bedeli", "masraf", "para transferi", "para transferini", "borcunuzu"],
     "aciliyet": ["acil", "hemen", "derhal", "bugün", "son gün", "süre bitiyor", "24 saat", "12 saat", "mesai bitimine"],
 }
 KATEGORI_BILGI = {  # kategori: (gerekçe, puan)
@@ -310,10 +311,14 @@ def kural_analizi(mesaj):
         return bulundu
 
     for kategori, kelimeler in KATEGORILER.items():
-        yakalandi = kelime_ara(kelimeler, kucuk)
-        if not yakalandi and kelime_ara(kelimeler, cozulmus):
-            yakalandi = kelime_oyunu_var = True
-        if yakalandi:
+        onceki_sayi = len(yakalanan)
+        normal_bulundu = kelime_ara(kelimeler, kucuk)
+        cozulmus_bulundu = kelime_ara(kelimeler, cozulmus)
+        if cozulmus_bulundu and (not normal_bulundu or len(yakalanan) > onceki_sayi):
+            for k in kelimeler:
+                if not re.search(r"\b" + re.escape(k) + r"\b", kucuk, re.IGNORECASE) and re.search(r"\b" + re.escape(k) + r"\b", cozulmus, re.IGNORECASE):
+                    kelime_oyunu_var = True
+        if normal_bulundu or cozulmus_bulundu:
             metin, puan = KATEGORI_BILGI[kategori]
             gerekceler.append(metin)
             skor += puan
@@ -453,12 +458,13 @@ def mesaji_analiz_et(mesaj, claude_kullan=True):
 
 
 def metni_isaretle(metin, kelimeler, linkler, guvenli_mi):
-    """HTML kaçışlı, tek geçişli vurgulama (iç içe span ve XSS sorunu yok)."""
+    """HTML kaçışlı, tek geçişli vurgulama (hem noktalı hem rakamlı kelime oyunlarını yakalar)."""
     kacisli = html.escape(metin)
     desenler = [re.escape(html.escape(l)) for l in sorted(set(linkler), key=len, reverse=True)]
     link_kume = {html.escape(l) for l in linkler}
     for k in sorted(set(kelimeler), key=len, reverse=True):
-        harfler = r"[\.\-_\s\*]*".join(re.escape(c) for c in k)  # b.l.o.k.e gibi yazımları da yakalar
+        harf_desenleri = [TERS_LEET.get(c.lower(), re.escape(c)) for c in k]
+        harfler = r"[\.\-_\s\*]*".join(harf_desenleri)  # b.l.o.k.e ve p4r4 gibi yazımları da yakalar
         desenler.append(r"\b" + harfler + r"\b")
     if not desenler:
         return kacisli
