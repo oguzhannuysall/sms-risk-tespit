@@ -46,8 +46,8 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     /* Metin Giriş Kutusu Estetiği */
-    .stTextArea textarea {
-        border-radius: 12px;
+    .stTextArea textarea, .stTextInput input {
+        border-radius: 10px;
         border: 1px solid rgba(255, 255, 255, 0.15);
         background-color: #161B22;
         color: #FAFAFA;
@@ -100,8 +100,8 @@ if st.sidebar.button("👨‍💻 Admin Paneli", use_container_width=True):
 
 st.sidebar.divider()
 
-# Dinamik Animasyonlu Bilgi Kutusu (Estetik Neon Tasarım)
-dinamik_kutu_html = """
+# Dinamik Animasyonlu Bilgi Kutusu VE Modern Geliştirici Kartı
+yan_menu_modern_html = """
 <style>
 .info-box {
     background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
@@ -156,7 +156,58 @@ dinamik_kutu_html = """
     18% { opacity: 0; transform: translateY(-8px); }
     100% { opacity: 0; transform: translateY(-8px); }
 }
+
+/* Modern Geliştirici Kartı Tasarımı */
+.dev-card {
+    background: linear-gradient(135deg, #161B22 0%, #0D1117 100%);
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid rgba(78, 67, 118, 0.5);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.dev-title {
+    color: #a8c0ff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+}
+.dev-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 3px solid #00f2fe;
+    transition: all 0.2s ease;
+}
+.dev-item:hover {
+    background: rgba(38, 208, 206, 0.1);
+    transform: translateX(3px);
+}
+.dev-name {
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 600;
+}
+.dev-badge {
+    margin-left: auto;
+    font-size: 10px;
+    background: rgba(0, 242, 254, 0.15);
+    color: #00f2fe;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+}
 </style>
+
 <div class="info-box">
     <div class="info-header">💡 SİBER İSTİHBARAT</div>
     <div class="text-container">
@@ -168,9 +219,22 @@ dinamik_kutu_html = """
         <div class="ticker-text">Dolandırıcılar genellikle <b>tatil ve mesai saatleri dışında</b> SMS atarak kurbanın kurumları arayıp teyit etmesini engeller.</div>
     </div>
 </div>
+
+<div class="dev-card">
+    <div class="dev-title">⚡ Geliştirici Ekibi</div>
+    <div class="dev-item">
+        <span>👨‍💻</span>
+        <span class="dev-name">Muzaffer Alp Ergülcü</span>
+        <span class="dev-badge">AI / NLP</span>
+    </div>
+    <div class="dev-item" style="margin-bottom: 0; border-left-color: #a8c0ff;">
+        <span>👨‍💻</span>
+        <span class="dev-name">Oğuzhan Uysal</span>
+        <span class="dev-badge" style="color: #a8c0ff; background: rgba(168, 192, 255, 0.15);">CyberSec</span>
+    </div>
+</div>
 """
-st.sidebar.markdown(dinamik_kutu_html, unsafe_allow_html=True)
-st.sidebar.info("👨‍💻 **Proje Geliştiricileri:**\n\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
+st.sidebar.markdown(yan_menu_modern_html, unsafe_allow_html=True)
 
 
 # --- SAYFA 1: KARŞILAMA EKRANI ---
@@ -346,14 +410,29 @@ elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     Scikit-Learn kütüphanesi üzerinde çalışan **TF-IDF Vectorizer** ve **Multinomial Naive Bayes** algoritmaları ile optimize edilmiştir.
     """)
 
-# --- SAYFA 5: ADMİN PANELİ ---
+# --- SAYFA 5: ÇOKLU YÖNETİCİ (ADMİN) PANELİ ---
 elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
     st.title("🔒 Yönetici (Admin) Paneli")
-    girilen_sifre = st.text_input("Lütfen Yönetici Şifresini Giriniz:", type="password")
+    st.write("Veri setini denetlemek ve yeni mesajları onaylamak için yönetici hesabınızla giriş yapın.")
     
-    if girilen_sifre == "admin123":
-        st.success("Giriş Başarılı. Yönetici Paneline Hoş Geldiniz.")
+    # İki kişilik özel yönetici hesapları
+    ADMIN_HESAPLARI = {
+        "alp": {"sifre": "alp123", "isim": "Muzaffer Alp Ergülcü"},
+        "oguzhan": {"sifre": "oguzhan123", "isim": "Oğuzhan Uysal"}
+    }
+    
+    col_giris1, col_giris2, col_bos = st.columns([1, 1, 1])
+    with col_giris1:
+        kullanici_adi = st.text_input("👤 Kullanıcı Adı:").strip().lower()
+    with col_giris2:
+        girilen_sifre = st.text_input("🔑 Şifre:", type="password")
+    
+    # Giriş Doğrulama Kontrolü
+    if kullanici_adi in ADMIN_HESAPLARI and ADMIN_HESAPLARI[kullanici_adi]["sifre"] == girilen_sifre:
+        aktif_admin = ADMIN_HESAPLARI[kullanici_adi]["isim"]
+        st.success(f"🔓 Giriş Başarılı! Hoş Geldiniz, **{aktif_admin}**.")
         st.divider()
+        
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric(label="Toplam Eğitilmiş Mesaj", value=f"{len(df)}")
@@ -391,5 +470,6 @@ elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
                 st.info("Harika! Şu an onay bekleyen hiçbir mesaj yok.")
         else:
             st.info("Harika! Şu an onay bekleyen hiçbir mesaj yok.")
-    elif girilen_sifre != "":
-        st.error("Hatalı Şifre! Lütfen tekrar deneyin.")
+            
+    elif kullanici_adi != "" or girilen_sifre != "":
+        st.error("❌ Hatalı kullanıcı adı veya şifre! Lütfen bilgilerinizi kontrol edin.")
