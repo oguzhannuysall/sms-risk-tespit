@@ -5,17 +5,57 @@ import random
 import os
 import socket
 
+# --- 1. PERFORMANS OPTİMİZASYONLARI ---
+# IP aramasına 2 saniye sınır (Sistemin donmasını engeller)
 socket.setdefaulttimeout(2.0) 
+# Regex kurallarını her butona basıldığında baştan hesaplamamak için önceden derliyoruz (Hızlandırıcı)
+LINK_REGEX = re.compile(r"(https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)", re.IGNORECASE)
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 
-# 1. Sayfa Ayarları
+# --- 2. SAYFA AYARLARI VE GLOBAL CSS (PROFESYONEL ARAYÜZ) ---
 st.set_page_config(page_title="Akıllı SMS Analizörü", page_icon="🛡️", layout="wide")
 
-# 2. Veri Seti ve Modeli Yükleme
-@st.cache_resource
+# Özel CSS: Metrik kartları, butonlar ve metin kutuları için modern UI
+st.markdown("""
+    <style>
+    /* Buton Tasarımları */
+    div.stButton > button:first-child {
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(150, 150, 150, 0.2);
+    }
+    div.stButton > button:first-child:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-color: #26D0CE;
+    }
+    /* İstatistik / Metrik Kartları */
+    div[data-testid="metric-container"] {
+        background-color: rgba(38, 208, 206, 0.05);
+        border: 1px solid rgba(38, 208, 206, 0.2);
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+    /* Metin Giriş Kutusu */
+    .stTextArea textarea {
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    /* Uyarı ve Bilgi Kutuları */
+    div.stAlert {
+        border-radius: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 3. MODEL YÜKLEME (Önbellekleme / Caching ile Hızlandırma) ---
+@st.cache_resource(show_spinner=False)
 def modeli_yukle():
     try:
         df = pd.read_csv('dataset.csv')
@@ -28,18 +68,18 @@ def modeli_yukle():
 
 model, df = modeli_yukle()
 
-# 3. Kategori Sözlükleri
+# --- 4. KATEGORİ SÖZLÜKLERİ ---
 KATEGORILER = {
     "kargo": ["ptt", "mng", "yurtiçi", "aras", "teslim", "adres", "kargonuz", "iade"],
-    "icra_hukuk": ["icra", "dava", "uzlaştırma", "adliye", "sevk", "hapis", "tazminat", "savcılık", "ceza"],
-    "banka_finans": ["bloke", "kredi kartı", "hesap", "şüpheli", "iptal", "ziraat", "garanti", "akbank"],
+    "icra_hukuk": ["icra", "dava", "uzlaştırma", "adliye", "sevk", "hapis", "tazminat", "savcılık", "ceza", "hukuk"],
+    "banka_finans": ["bloke", "kredi kartı", "hesap", "şüpheli", "iptal", "ziraat", "garanti", "akbank", "papara"],
     "para_talebi": ["iban", "hesaba yatır", "ödeme", "tl", "bedeli", "masraf", "para transferi"]
 }
 
 if "sayfa" not in st.session_state:
     st.session_state.sayfa = "🏠 Karşılama Ekranı"
 
-# --- YAN MENÜ ---
+# --- YAN MENÜ (SIDEBAR) ---
 st.sidebar.title("📌 Navigasyon")
 if st.sidebar.button("🏠 Karşılama Ekranı", use_container_width=True):
     st.session_state.sayfa = "🏠 Karşılama Ekranı"
@@ -54,7 +94,7 @@ if st.sidebar.button("👨‍💻 Admin Paneli", use_container_width=True):
 
 st.sidebar.divider()
 
-# --- DİNAMİK VE ALBENİLİ İSTATİSTİK KUTUCUGU (CSS ANİMASYONLU) ---
+# Dinamik Animasyonlu Kutu
 dinamik_kutu_html = """
 <style>
 .info-box {
@@ -125,7 +165,6 @@ dinamik_kutu_html = """
 </div>
 """
 st.sidebar.markdown(dinamik_kutu_html, unsafe_allow_html=True)
-
 st.sidebar.info("👨‍💻 **Proje Geliştiricileri:**\n\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
 
 
@@ -136,47 +175,56 @@ if st.session_state.sayfa == "🏠 Karşılama Ekranı":
     ### Siber Güvenliğiniz İçin Akıllı Çözüm
     Günümüzde artan **sahte kargo, icra takibi ve banka dolandırıcılığı** mesajlarına karşı 
     geliştirdiğimiz bu yapay zeka sistemi, SMS'lerinizi analiz ederek sizi tehlikelere karşı uyarır.
+    
+    * ⚡ **Anında Analiz:** Güçlü NLP motoru ile saniyeler içinde risk tespiti.
+    * 🌍 **Canlı IP Çözümleme:** Tıklamadan önce linklerin gerçek sunucularını tespit etme.
+    * 🧠 **Dinamik Öğrenme:** Kitle kaynaklı verilerle her geçen gün akıllanan model.
     """)
+    st.write("")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🚀 UYGULAMAYI BAŞLAT VE SMS ANALİZİ YAP", type="primary", use_container_width=True):
+        if st.button("🚀 UYGULAMAYI BAŞLAT VE ANALİZ YAP", type="primary", use_container_width=True):
             st.session_state.sayfa = "🛡️ SMS Analizörü"
             st.rerun()
 
 # --- SAYFA 2: SMS ANALİZÖR ---
 elif st.session_state.sayfa == "🛡️ SMS Analizörü":
     st.title("🛡️ Akıllı SMS Analizörü")
+    st.write("Şüpheli mesajınızı aşağıya yapıştırın veya sistemin yeteneklerini görmek için örnek butonları kullanın.")
     
     if "mesaj_kutusu" not in st.session_state:
         st.session_state.mesaj_kutusu = ""
 
     icra_banka_mesajlari = [
         "Sn. (Adınız), hakkınızda açılacak cinsel taciz davası bulunmaktadır. Uzlaştırma bedeli için hesaba para yatırın. link.com",
-        "Sayin musteri hesabiniza bloke konulmustur. Acil islem icin tiklayin: tinyurl.com/banka-onay"
+        "Sayin musteri hesabiniza bloke konulmustur. Acil islem icin tiklayin: tinyurl.com/banka-onay",
+        "Akbank: Hesabinizdan yurt disi kaynakli 10.000 TL transfer talebi alinmistir. İptal etmek icin: akbank-iptal.xyz"
     ]
     kargo_odul_mesajlari = [
         "PTT Kargo: Gonderiniz adres hatasi nedeniyle teslim edilemedi. Guncellemek icin tiklayin: http://bit.ly/kargo-onay",
-        "Tebrikler! 10.000 TL degerinde hediye ceki kazandiniz. Hemen alin: odul-al.net"
+        "Tebrikler! GSM operatorunuzden iPhone 15 Pro Max kazandiniz. Teslim alin: odul-kargo.net",
+        "Trendyol: Yilbasi ozel 1000 TL indirim kuponunuz hesabiniza tanimlandi. Kullanmak icin: trendyol-firsat.net"
     ]
     guvenli_mesajlar = [
         "Yarın saat 14:00'te toplantımız var, lütfen gecikmeyin. İyi çalışmalar.",
-        "Şu komik videoya baksana: https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        "Şu komik videoya baksana: https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "Kredi kartı ekstreniz e-posta adresinize gönderilmiştir. Ziraat Bankası"
     ]
 
     colA, colB, colC = st.columns(3)
     with colA:
-        if st.button("🚨 Örnek İcra/Banka", use_container_width=True):
+        if st.button("🚨 Örnek İcra/Banka (Rastgele)", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(icra_banka_mesajlari)
     with colB:
-        if st.button("📦 Örnek Kargo/Ödül", use_container_width=True):
+        if st.button("📦 Örnek Kargo/Ödül (Rastgele)", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(kargo_odul_mesajlari)
     with colC:
-        if st.button("✅ Örnek Güvenli (YouTube)", use_container_width=True):
+        if st.button("✅ Örnek Güvenli (Rastgele)", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(guvenli_mesajlar)
 
-    mesaj_girdisi = st.text_area("Mesajınız:", value=st.session_state.mesaj_kutusu, height=130)
+    mesaj_girdisi = st.text_area("Analiz Edilecek SMS Metni:", value=st.session_state.mesaj_kutusu, height=130)
 
-    if st.button("🔍 Mesajı Analiz Et", type="primary"):
+    if st.button("🔍 Güvenlik Analizini Başlat", type="primary"):
         if mesaj_girdisi:
             gerekceler = []
             risk_skoru = 0
@@ -185,8 +233,8 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
             guvenli_domainler = ["youtube.com", "youtu.be", "google.com", "instagram.com", "turkiye.gov.tr", "edu.tr", "whatsapp.com", "github.com", "twitter.com"]
             kisaltilmis_linkler = ["bit.ly", "tinyurl.com", "t.co", "ow.ly", "cutt.ly", "is.gd"]
             
-            link_regex = r"(https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)"
-            bulunan_linkler = re.findall(link_regex, mesaj_girdisi)
+            # Hızlandırılmış derlenmiş Regex kullanımı
+            bulunan_linkler = LINK_REGEX.findall(mesaj_girdisi)
             
             guvenli_link_var = False
             tehlikeli_link_var = False
@@ -231,7 +279,7 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                     gerekceler.append("🧠 **Yapay Zeka Notu:** Mesaj yapısı şüpheli bulunsa da, içindeki bağlantı resmi bir kuruma ait olduğu için YZ riski sıfırlandı.")
                     risk_skoru = 0
                 else:
-                    gerekceler.append("🧠 **Yapay Zeka Analizi:** AI, bu cümlenin yapısını dolandırıcılık vakalarıyla eşleştirdi.")
+                    gerekceler.append("🧠 **Yapay Zeka Analizi:** NLP Motoru, bu cümlenin semantik yapısını önceki dolandırıcılık vakalarıyla eşleştirdi.")
                     risk_skoru += 20
 
             toplam_risk = min(risk_skoru, 100)
@@ -242,21 +290,23 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                 st.metric(label="Hesaplanan Risk Skoru", value=f"%{toplam_risk}")
             with sonuc_col2:
                 if toplam_risk >= 70:
-                    st.error("🚨 KRİTİK RİSK: Bu mesaj %99 ihtimalle dolandırıcılık (phishing) amaçlıdır!")
+                    st.error("🚨 KRİTİK RİSK: Bu mesaj %99 ihtimalle dolandırıcılık (phishing) amaçlıdır! Kesinlikle itibar etmeyiniz.")
                 elif 30 <= toplam_risk < 70:
-                    st.warning("⚠️ ŞÜPHELİ: Bu mesajda riskli unsurlar bulundu. Teyit etmeden işlem yapmayın.")
+                    st.warning("⚠️ ŞÜPHELİ: Bu mesajda riskli unsurlar bulundu. Teyit etmeden hiçbir işlem yapmayın.")
                 else:
-                    st.success("✅ GÜVENLİ: Bu mesajda belirgin bir dolandırıcılık riski tespit edilmedi.")
+                    st.success("✅ GÜVENLİ: Bu mesajda belirgin bir siber güvenlik riski tespit edilmedi.")
 
             if toplam_risk >= 0 and len(gerekceler) > 0:
-                st.subheader("🔍 Tespit Edilen Analiz Nedenleri:")
+                st.subheader("🔍 Sistem Tarafından Tespit Edilen Nedenler:")
                 for g in gerekceler:
                     st.markdown(g)
+        else:
+            st.warning("Lütfen analiz edilecek bir metin giriniz.")
 
-# --- SAYFA 3, 4, 5 (Aynı Kaldı) ---
+# --- SAYFA 3: SİSTEME KATKI SAĞLA ---
 elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
     st.title("📥 Veri Setine Katkıda Bulunun")
-    st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sisteme dahil edilecektir.")
+    st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sistemin makine öğrenmesi algoritmasına dahil edilecektir.")
     
     yeni_mesaj = st.text_area("Önereceğiniz mesajı yazın:")
     etiket_secimi = st.radio("Bu mesajın türü nedir?", ["🚨 Dolandırıcılık / Oltalama Mesajı (Phishing)", "✅ Normal / Güvenli Mesaj"])
@@ -275,6 +325,7 @@ elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
                 yeni_veri.to_csv("onay_bekleyenler.csv", mode="a", header=False, index=False)
             st.success("✅ Mesajınız başarıyla yönetici onay havuzuna gönderildi!")
 
+# --- SAYFA 4: YZ VE SKORLAMA ---
 elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     st.title("🧠 Yapay Zeka ve Skorlama Altyapısı")
     st.markdown("""
@@ -286,8 +337,12 @@ elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     
     ### 2. IP Çözümleme Teknolojisi (DNS Lookup)
     Mesaj içerisinde tespit edilen her bağlantı, sistem tarafından "Beyaz Liste" (Whitelist) taramasından geçirilir. Yabancı bir alan adı tespit edilirse, sistem arka planda bir DNS sorgusu çalıştırarak dolandırıcı sunucunun **IP adresini** tespit edip raporlar.
+    
+    ### 3. Makine Öğrenmesi (NLP) Motoru
+    Scikit-Learn kütüphanesi üzerinde çalışan **TF-IDF Vectorizer** (Metni matematiğe dönüştürme) ve **Multinomial Naive Bayes** (Olasılık tahmini) algoritmaları kullanılmıştır.
     """)
 
+# --- SAYFA 5: ADMİN PANELİ ---
 elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
     st.title("🔒 Yönetici (Admin) Paneli")
     girilen_sifre = st.text_input("Lütfen Yönetici Şifresini Giriniz:", type="password")
@@ -332,6 +387,5 @@ elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
                 st.info("Harika! Şu an onay bekleyen hiçbir mesaj yok.")
         else:
             st.info("Harika! Şu an onay bekleyen hiçbir mesaj yok.")
-    
     elif girilen_sifre != "":
         st.error("Hatalı Şifre! Lütfen tekrar deneyin.")
