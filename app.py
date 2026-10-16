@@ -85,7 +85,6 @@ st.markdown("""
         background: linear-gradient(180deg, #0D1117 0%, #111827 100%);
         border-right: 1px solid rgba(0, 242, 254, 0.12);
     }
-    /* Sadeleştirilmiş Vurgu Kutusu */
     .highlight-box {
         background: rgba(22, 27, 34, 0.8);
         border: 1px solid rgba(0, 242, 254, 0.25);
@@ -160,13 +159,13 @@ def modeli_yukle():
 
 model, df = modeli_yukle()
 
-# --- 4. SÖZLÜKLER VE KONTROL FONKSİYONLARI ---
+# --- 4. SÖZLÜKLER VE KESİN KONTROL FONKSİYONLARI ---
 KATEGORILER = {
     "kargo": ["ptt", "mng", "yurtiçi", "yurtici", "aras", "teslim edilemedi", "adres hatası", "adres yetersizliği", "kargonuz", "gönderiniz", "iade", "gümrük"],
     "icra_hukuk": ["icra", "dava", "uzlaştırma", "uzlastirma", "adliye", "sevk", "hapis", "tazminat", "savcılık", "ceza", "hukuk", "bahis", "taciz", "soruşturma", "uyap"],
     "banka_finans": ["bloke", "kredi kartı", "hesabınıza", "şüpheli işlem", "supheli", "iptal", "ziraat", "garanti", "akbank", "papara", "aidat", "binance"],
     "odul_yardim": ["tebrikler", "hediye", "kazandınız", "kazandiniz", "askıda fatura", "ikramiye", "çekiliş", "bonus", "kupon", "destek paketi"],
-    "para_talebi": ["iban", "hesaba yatır", "ödeme", "odeme", "tl", "bedeli", "masraf", "para transferi", "borcunuzu"],
+    "para_talebi": ["iban", "hesaba yatır", "ödeme", "odeme", "bedeli", "masraf", "para transferi", "borcunuzu"],
     "aciliyet": ["acil", "hemen", "derhal", "bugün", "son gün", "süre bitiyor", "24 saat", "12 saat", "mesai bitimine"]
 }
 
@@ -187,7 +186,8 @@ def metni_isaretle(metin, yakalanan_kelimeler, linkler, guvenli_mi):
         islenmis = islenmis.replace(link, f'<span class="{stil}">🔗 {link}</span>')
     
     for kelime in sorted(set(yakalanan_kelimeler), key=len, reverse=True):
-        pattern = re.compile(re.escape(kelime), re.IGNORECASE)
+        # Tam kelime eşleşmesi (mutlaka içindeki 'tl' harfini yakalamaması için \b sınırı)
+        pattern = re.compile(r'\b' + re.escape(kelime) + r'\b', re.IGNORECASE)
         islenmis = pattern.sub(lambda m: f'<span class="danger-tag">{m.group(0)}</span>', islenmis)
     return islenmis
 
@@ -224,16 +224,24 @@ def mesaji_analiz_et(mesaj_girdisi):
                     risk_skoru += 45
 
     kelime_oyunu_var = False
-    for kategori, kelimeler in KATEGORILER.items():
-        kategori_yakalandi = False
-        for k in kelimeler:
-            if k in mesaj_lower:
-                kategori_yakalandi = True
+    
+    # Tam kelime taraması için özel fonksiyon
+    def kelime_ara(kelime_listesi, metin_kontrol):
+        bulundu = False
+        for k in kelime_listesi:
+            # \b ile kelimenin başını ve sonunu sınırlandırıyoruz (böylece mutlaka içindeki 'tl' yakalanmaz)
+            desen = r'\b' + re.escape(k) + r'\b'
+            if re.search(desen, metin_kontrol, re.IGNORECASE):
+                bulundu = True
                 yakalanan_kelimeler.append(k)
-            elif k in cozulmus_mesaj:
+        return bulundu
+
+    for kategori, kelimeler in KATEGORILER.items():
+        kategori_yakalandi = kelime_ara(kelimeler, mesaj_lower)
+        if not kategori_yakalandi:
+            if kelime_ara(kelimeler, cozulmus_mesaj):
                 kategori_yakalandi = True
                 kelime_oyunu_var = True
-                yakalanan_kelimeler.append(k)
 
         if kategori_yakalandi:
             if kategori == "icra_hukuk":
@@ -254,6 +262,13 @@ def mesaji_analiz_et(mesaj_girdisi):
             elif kategori == "aciliyet":
                 gerekceler.append("⏱️ **Acele Ettirme Taktiği:** Düşünmenize izin vermeden hemen işlem yapmanız için baskı kuruluyor.")
                 risk_skoru += 15
+
+    # Özel olarak "tl" para birimini tam kelime olarak arama (mutlaka kelimesinden etkilenmez)
+    if re.search(r'\btl\b', mesaj_lower) or re.search(r'\btl\b', cozulmus_mesaj):
+        yakalanan_kelimeler.append("tl")
+        if not any("Para İsteme" in g for g in gerekceler):
+            gerekceler.append("💸 **Para Birimi Tespiti:** Mesajda para miktarı veya Türk Lirası (TL) geçmektedir.")
+            risk_skoru += 15
 
     if kelime_oyunu_var:
         gerekceler.append("🕵️ **Gizlenmiş Kelime Tespiti:** Güvenlik sistemlerini atlatmak için kelimelerin arasına nokta veya işaretler konulmuş!")
@@ -302,7 +317,7 @@ ORNEK_HAVUZU = {
         "Yarın saat 14:00'te proje toplantımız var, lütfen gecikmeyin. İyi çalışmalar.",
         "Şu faydalı eğitim videosuna mutlaka baksana: https://www.youtube.com/watch?v=aircAruvnKk",
         "Ziraat Bankası: 4821 nolu kartınızla 340,00 TL tutarında market alışverişi yapılmıştır. B001",
-        "Yurtiçi Kargo: 84920192 takip numaralı gönderiniz teslim edilmek üzere dağıtıma çıkarılmıştır. B018",
+        "Yurtiçi Kargo: 84920192 takip numaralı gönderiniz teslim edilmek üzere çıkarılmıştır. B018",
         "Kanka akşam halı saha maçına geliyorsun değil mi? Kramponları unutma."
     ]
 }
@@ -574,7 +589,7 @@ elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
                 yeni_veri.to_csv("onay_bekleyenler.csv", mode="w", index=False)
             else:
                 yeni_veri.to_csv("onay_bekleyenler.csv", mode="a", header=False, index=False)
-            st.success("✅ Öneriniz başarıyla yönetici onayuna gönderildi. Teşekkürler!")
+            st.success("✅ Öneriniz başarıyla yönetici onayına gönderildi. Teşekkürler!")
 
 # --- SAYFA 4: SİSTEM NASIL ÇALIŞIR ---
 elif st.session_state.sayfa == "🧠 YZ ve Doğrulama":
