@@ -159,7 +159,7 @@ def modeli_yukle():
 
 model, df = modeli_yukle()
 
-# --- 4. SÖZLÜKLER VE KESİN KONTROL FONKSİYONLARI ---
+# --- 4. SÖZLÜKLER VE KONTROL FONKSİYONLARI ---
 KATEGORILER = {
     "kargo": ["ptt", "mng", "yurtiçi", "yurtici", "aras", "teslim edilemedi", "adres hatası", "adres yetersizliği", "kargonuz", "gönderiniz", "iade", "gümrük"],
     "icra_hukuk": ["icra", "dava", "uzlaştırma", "uzlastirma", "adliye", "sevk", "hapis", "tazminat", "savcılık", "ceza", "hukuk", "bahis", "taciz", "soruşturma", "uyap"],
@@ -186,7 +186,6 @@ def metni_isaretle(metin, yakalanan_kelimeler, linkler, guvenli_mi):
         islenmis = islenmis.replace(link, f'<span class="{stil}">🔗 {link}</span>')
     
     for kelime in sorted(set(yakalanan_kelimeler), key=len, reverse=True):
-        # Tam kelime eşleşmesi (mutlaka içindeki 'tl' harfini yakalamaması için \b sınırı)
         pattern = re.compile(r'\b' + re.escape(kelime) + r'\b', re.IGNORECASE)
         islenmis = pattern.sub(lambda m: f'<span class="danger-tag">{m.group(0)}</span>', islenmis)
     return islenmis
@@ -223,13 +222,9 @@ def mesaji_analiz_et(mesaj_girdisi):
                     gerekceler.append(f"🔗 **Bilinmeyen Bağlantı:** Güvenliği onaylanmamış bir internet adresine (`{domain}`) yönlendiriyor. ({ip_detay})")
                     risk_skoru += 45
 
-    kelime_oyunu_var = False
-    
-    # Tam kelime taraması için özel fonksiyon
     def kelime_ara(kelime_listesi, metin_kontrol):
         bulundu = False
         for k in kelime_listesi:
-            # \b ile kelimenin başını ve sonunu sınırlandırıyoruz (böylece mutlaka içindeki 'tl' yakalanmaz)
             desen = r'\b' + re.escape(k) + r'\b'
             if re.search(desen, metin_kontrol, re.IGNORECASE):
                 bulundu = True
@@ -263,7 +258,6 @@ def mesaji_analiz_et(mesaj_girdisi):
                 gerekceler.append("⏱️ **Acele Ettirme Taktiği:** Düşünmenize izin vermeden hemen işlem yapmanız için baskı kuruluyor.")
                 risk_skoru += 15
 
-    # Özel olarak "tl" para birimini tam kelime olarak arama (mutlaka kelimesinden etkilenmez)
     if re.search(r'\btl\b', mesaj_lower) or re.search(r'\btl\b', cozulmus_mesaj):
         yakalanan_kelimeler.append("tl")
         if not any("Para İsteme" in g for g in gerekceler):
@@ -655,25 +649,50 @@ elif st.session_state.sayfa == "🧠 YZ ve Doğrulama":
         4. **Yapay Zeka Kararı:** Cümlenin genel anlamını binlerce örnekle karşılaştırarak risk oranını yüzde olarak hesaplar.
         """)
 
-# --- SAYFA 5: YÖNETİCİ PANELİ ---
+# --- SAYFA 5: YÖNETİCİ PANELİ (BUTONLU GİRİŞ SİSTEMİ) ---
 elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
     st.title("🔒 Yönetici Paneli")
-    st.write("Gelen mesaj önerilerini incelemek ve onaylamak için giriş yapın.")
+    st.write("Gelen mesaj önerilerini incelemek ve onaylamak için kullanıcı adı ve şifrenizle giriş yapın.")
     
     ADMIN_HESAPLARI = {
         "alp": {"sifre": "alp123", "isim": "Muzaffer Alp Ergülcü"},
         "oguzhan": {"sifre": "oguzhan123", "isim": "Oğuzhan Uysal"}
     }
     
-    col_giris1, col_giris2, col_bos = st.columns([1, 1, 1])
-    with col_giris1:
-        kullanici_adi = st.text_input("👤 Kullanıcı Adı:").strip().lower()
-    with col_giris2:
-        girilen_sifre = st.text_input("🔑 Şifre:", type="password")
+    # Oturumda giriş yapıldı mı kontrolü
+    if "admin_giris" not in st.session_state:
+        st.session_state.admin_giris = False
+    if "aktif_yonetici" not in st.session_state:
+        st.session_state.aktif_yonetici = ""
+
+    if not st.session_state.admin_giris:
+        col_giris1, col_giris2, col_giris3 = st.columns([1, 1, 1])
+        with col_giris1:
+            kullanici_adi = st.text_input("👤 Kullanıcı Adı:").strip().lower()
+        with col_giris2:
+            girilen_sifre = st.text_input("🔑 Şifre:", type="password")
+        with col_giris3:
+            st.write("") # Boşluk hizalama için
+            st.write("")
+            giris_butonu = st.button("Giriş Yap", type="primary")
+
+        if giris_butonu:
+            if kullanici_adi in ADMIN_HESAPLARI and ADMIN_HESAPLARI[kullanici_adi]["sifre"] == girilen_sifre:
+                st.session_state.admin_giris = True
+                st.session_state.aktif_yonetici = ADMIN_HESAPLARI[kullanici_adi]["isim"]
+                st.rerun()
+            else:
+                st.error("❌ Hatalı kullanıcı adı veya şifre!")
     
-    if kullanici_adi in ADMIN_HESAPLARI and ADMIN_HESAPLARI[kullanici_adi]["sifre"] == girilen_sifre:
-        aktif_admin = ADMIN_HESAPLARI[kullanici_adi]["isim"]
-        st.success(f"🔓 Giriş Başarılı! Hoş Geldiniz, **{aktif_admin}**.")
+    # Giriş yapıldıysa Admin Paneli İçeriğini Göster
+    if st.session_state.admin_giris:
+        st.success(f"🔓 Giriş Başarılı! Hoş Geldiniz, **{st.session_state.aktif_yonetici}**.")
+        
+        if st.button("🚪 Çıkış Yap"):
+            st.session_state.admin_giris = False
+            st.session_state.aktif_yonetici = ""
+            st.rerun()
+
         st.divider()
         
         col1, col2, col3 = st.columns(3)
@@ -737,6 +756,3 @@ elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
                 st.info("Onay bekleyen yeni öneri bulunmuyor.")
         else:
             st.info("Onay bekleyen yeni öneri bulunmuyor.")
-            
-    elif kullanici_adi != "" or girilen_sifre != "":
-        st.error("❌ Hatalı kullanıcı adı veya şifre!")
