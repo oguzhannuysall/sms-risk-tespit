@@ -3,6 +3,11 @@ import pandas as pd
 import re
 import random
 import os
+import socket  # IP Adresi çözümlemek için eklendi
+
+# İnternet yavaşlığında sistemin kilitlenmemesi için IP aramasına 2 saniye sınır koyuyoruz
+socket.setdefaulttimeout(2.0) 
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
@@ -10,7 +15,7 @@ from sklearn.pipeline import make_pipeline
 # 1. Sayfa Ayarları
 st.set_page_config(page_title="Akıllı SMS Analizörü", page_icon="🛡️", layout="wide")
 
-# 2. Veri Seti ve Modeli Yükleme (Önbelleğe Alma)
+# 2. Veri Seti ve Modeli Yükleme
 @st.cache_resource
 def modeli_yukle():
     try:
@@ -49,8 +54,7 @@ if st.sidebar.button("👨‍💻 Admin Paneli", use_container_width=True):
     st.session_state.sayfa = "👨‍💻 Admin Paneli"
 
 st.sidebar.divider()
-st.sidebar.info("Proje Geliştiricileri:\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
-
+st.sidebar.info("Proje Sahipleri:\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
 
 # --- SAYFA 1: KARŞILAMA EKRANI ---
 if st.session_state.sayfa == "🏠 Karşılama Ekranı":
@@ -75,33 +79,26 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
 
     icra_banka_mesajlari = [
         "Sn. (Adınız), hakkınızda açılacak cinsel taciz davası bulunmaktadır. Uzlaştırma bedeli için hesaba para yatırın. link.com",
-        "Sayin musteri hesabiniza bloke konulmustur. Acil islem icin tiklayin: tinyurl.com/banka-onay",
-        "Yasa disi bahis oynadiginiz tespit edilmistir. 45.000 TL cezanizi odemek icin iletisime gecin.",
-        "Dosyanız adliyeye sevk edilecektir. Mağdur olmamak için hemen dönüş yapınız."
+        "Sayin musteri hesabiniza bloke konulmustur. Acil islem icin tiklayin: tinyurl.com/banka-onay"
     ]
     kargo_odul_mesajlari = [
         "PTT Kargo: Gonderiniz adres hatasi nedeniyle teslim edilemedi. Guncellemek icin tiklayin: http://bit.ly/kargo-onay",
-        "MNG Kargo: Dağıtıma çıkan kargonuz adres yetersizliğinden iade edilmiştir. Detay: kargo-takip.xyz",
-        "Yurtiçi Kargo: Teslimatınız başarısız oldu. Yeniden dağıtım ücretini ödemek için linke girin: kargo-odeme.net",
         "Tebrikler! 10.000 TL degerinde hediye ceki kazandiniz. Hemen alin: odul-al.net"
     ]
     guvenli_mesajlar = [
         "Yarın saat 14:00'te toplantımız var, lütfen gecikmeyin. İyi çalışmalar.",
-        "Kanka yarın akşam halı saha maçımız var, gelmeyi unutma.",
-        "Kredi kartı ekstreniz e-posta adresinize gönderilmiştir. Ziraat Bankası",
-        "Ders programı güncellendi WhatsApp grubundan bakabilirsiniz.",
-        "Kiranızı ayın 5'ine kadar yatırmanızı rica ederim."
+        "Şu komik videoya baksana: https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     ]
 
     colA, colB, colC = st.columns(3)
     with colA:
-        if st.button("🚨 Örnek İcra/Banka (Rastgele)", use_container_width=True):
+        if st.button("🚨 Örnek İcra/Banka", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(icra_banka_mesajlari)
     with colB:
-        if st.button("📦 Örnek Kargo/Ödül (Rastgele)", use_container_width=True):
+        if st.button("📦 Örnek Kargo/Ödül", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(kargo_odul_mesajlari)
     with colC:
-        if st.button("✅ Örnek Güvenli (Rastgele)", use_container_width=True):
+        if st.button("✅ Örnek Güvenli (YouTube)", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(guvenli_mesajlar)
 
     mesaj_girdisi = st.text_area("Mesajınız:", value=st.session_state.mesaj_kutusu, height=130)
@@ -112,11 +109,42 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
             risk_skoru = 0
             mesaj_lower = mesaj_girdisi.lower()
 
-            link_regex = r"(http://|https://|bit\.ly|tinyurl\.com|t\.co|[a-zA-Z0-9.-]+\.(com|net|org|tr))"
-            if re.search(link_regex, mesaj_girdisi, re.IGNORECASE):
-                gerekceler.append("🔗 **Şüpheli Bağlantı:** Yönlendirme linki (URL) tespit edildi.")
-                risk_skoru += 45
+            # --- YENİ BÖLÜM: BEYAZ LİSTE VE IP ÇÖZÜMLEME SİSTEMİ ---
+            guvenli_domainler = ["youtube.com", "youtu.be", "google.com", "instagram.com", "turkiye.gov.tr", "edu.tr", "whatsapp.com", "github.com", "twitter.com"]
+            kisaltilmis_linkler = ["bit.ly", "tinyurl.com", "t.co", "ow.ly", "cutt.ly", "is.gd"]
+            
+            link_regex = r"(https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)"
+            bulunan_linkler = re.findall(link_regex, mesaj_girdisi)
+            
+            guvenli_link_var = False
+            tehlikeli_link_var = False
 
+            if bulunan_linkler:
+                for link in bulunan_linkler:
+                    # Domaini temizle
+                    domain = link.replace("https://", "").replace("http://", "").replace("www.", "").split('/')[0]
+                    
+                    # Beyaz Liste Kontrolü
+                    if any(guvenli in domain for guvenli in guvenli_domainler):
+                        guvenli_link_var = True
+                        gerekceler.append(f"🌐 **Güvenilir Bağlantı:** '{domain}' adresi sistemin güvenilir beyaz listesinde (Whitelist) yer almaktadır.")
+                    else:
+                        tehlikeli_link_var = True
+                        # IP Çözümleme
+                        try:
+                            ip_adresi = socket.gethostbyname(domain)
+                            ip_detay = f"Sunucu IP: {ip_adresi}"
+                        except:
+                            ip_detay = "IP Gizlenmiş veya Ulaşılamıyor!"
+
+                        if any(kisaltma in domain for kisaltma in kisaltilmis_linkler):
+                            gerekceler.append(f"🔗 **Tehlikeli Link Kısaltması:** İzlenmeyi zorlaştıran kısaltılmış link ({domain}) kullanılmış! ({ip_detay})")
+                            risk_skoru += 55
+                        else:
+                            gerekceler.append(f"🔗 **Bilinmeyen Bağlantı:** Doğrulanmamış bir web sitesine ({domain}) yönlendirme yapılıyor. ({ip_detay})")
+                            risk_skoru += 45
+
+            # Kural 2: Kelime Analizi
             for kategori, kelimeler in KATEGORILER.items():
                 if any(kelime in mesaj_lower for kelime in kelimeler):
                     if kategori == "icra_hukuk":
@@ -129,10 +157,16 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                         gerekceler.append("💸 **Para/Ödeme Talebi:** IBAN veya para transferi isteniyor.")
                         risk_skoru += 35
 
+            # Kural 3: Yapay Zeka
             ml_tahmin = model.predict([mesaj_girdisi])[0]
             if ml_tahmin == 1:
-                gerekceler.append("🧠 **Yapay Zeka Analizi:** AI, bu cümlenin yapısını dolandırıcılık vakalarıyla eşleştirdi.")
-                risk_skoru += 20
+                # EĞER SADECE GÜVENLİ LİNK VARSA VE BAŞKA RİSK YOKSA YZ'NİN ÖNYARGISINI EZ (Override)
+                if guvenli_link_var and not tehlikeli_link_var and risk_skoru == 0:
+                    gerekceler.append("🧠 **Yapay Zeka Notu:** Mesaj yapısı şüpheli bulunsa da, içindeki bağlantı resmi bir kuruma ait olduğu için YZ riski sıfırlandı.")
+                    risk_skoru = 0
+                else:
+                    gerekceler.append("🧠 **Yapay Zeka Analizi:** AI, bu cümlenin yapısını dolandırıcılık vakalarıyla eşleştirdi.")
+                    risk_skoru += 20
 
             toplam_risk = min(risk_skoru, 100)
             st.divider()
@@ -148,12 +182,12 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                 else:
                     st.success("✅ GÜVENLİ: Bu mesajda belirgin bir dolandırıcılık riski tespit edilmedi.")
 
-            if toplam_risk > 0:
-                st.subheader("🔍 Tespit Edilen Risk Nedenleri:")
+            if toplam_risk >= 0 and len(gerekceler) > 0:
+                st.subheader("🔍 Tespit Edilen Analiz Nedenleri:")
                 for g in gerekceler:
                     st.markdown(g)
 
-# --- SAYFA 3: SİSTEME KATKI SAĞLA (Kullanıcı Ekranı) ---
+# --- SAYFA 3, 4, 5 (Aynı Kaldı) ---
 elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
     st.title("📥 Veri Setine Katkıda Bulunun")
     st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sisteme dahil edilecektir.")
@@ -169,15 +203,12 @@ elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
             temiz_mesaj = yeni_mesaj.replace('\n', ' ').replace('\r', '')
             
             yeni_veri = pd.DataFrame({"mesaj": [temiz_mesaj], "etiket": [etiket_degeri]})
-            
             if not os.path.exists("onay_bekleyenler.csv"):
                 yeni_veri.to_csv("onay_bekleyenler.csv", mode="w", index=False)
             else:
                 yeni_veri.to_csv("onay_bekleyenler.csv", mode="a", header=False, index=False)
-            
-            st.success("✅ Mesajınız başarıyla yönetici onay havuzuna gönderildi! İlginiz için teşekkürler.")
+            st.success("✅ Mesajınız başarıyla yönetici onay havuzuna gönderildi!")
 
-# --- SAYFA 4: YZ VE SKORLAMA ---
 elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     st.title("🧠 Yapay Zeka ve Skorlama Altyapısı")
     st.markdown("""
@@ -187,24 +218,17 @@ elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     * **Doğrudan Para/IBAN Talebi:** +35 Puan
     * **Yapay Zeka (Bağlam Eşleşmesi):** +20 Puan
     
-    ### 2. Hangi Yapay Zeka Kullanıldı?
-    **TF-IDF Vectorizer** ve **Multinomial Naive Bayes** kullanılmıştır.
+    ### 2. IP Çözümleme Teknolojisi (DNS Lookup)
+    Mesaj içerisinde tespit edilen her bağlantı, sistem tarafından "Beyaz Liste" (Whitelist) taramasından geçirilir. Yabancı bir alan adı tespit edilirse, sistem arka planda bir DNS sorgusu çalıştırarak dolandırıcı sunucunun **IP adresini** tespit edip raporlar.
     """)
 
-# --- SAYFA 5: ADMİN PANELİ (GİZLİ EKRAN) ---
 elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
     st.title("🔒 Yönetici (Admin) Paneli")
-    st.info("Bu panele sadece proje yöneticileri şifre ile erişebilir.")
-    
-    # Şifre Koruma Alanı (Şifreniz: admin123)
     girilen_sifre = st.text_input("Lütfen Yönetici Şifresini Giriniz:", type="password")
     
     if girilen_sifre == "admin123":
         st.success("Giriş Başarılı. Yönetici Paneline Hoş Geldiniz.")
         st.divider()
-        
-        # 1. Canlı Modelin İstatistikleri
-        st.subheader("📊 Sistemdeki Güncel Veri Seti İstatistikleri")
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric(label="Toplam Eğitilmiş Mesaj", value=f"{len(df)}")
@@ -214,28 +238,22 @@ elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
             st.metric(label="Güvenli (Normal)", value=f"{len(df[df['etiket'] == 0])}")
             
         st.divider()
-        
-        # 2. Onay Bekleyen Mesajlar Havuzu
         st.subheader("⏳ Onay Bekleyen (Kullanıcılardan Gelen) Mesajlar")
         
         if os.path.exists("onay_bekleyenler.csv"):
             bekleyen_df = pd.read_csv("onay_bekleyenler.csv")
-            
             if len(bekleyen_df) > 0:
                 for idx, row in bekleyen_df.iterrows():
                     with st.container():
-                        mesaj_turu = "🚨 Phishing (Dolandırıcı)" if row['etiket'] == 1 else "✅ Güvenli"
+                        mesaj_turu = "🚨 Phishing" if row['etiket'] == 1 else "✅ Güvenli"
                         st.markdown(f"**Mesaj:** {row['mesaj']}")
                         st.markdown(f"**Önerilen Etiket:** {mesaj_turu}")
-                        
                         b1, b2, b3 = st.columns([1, 1, 4])
                         with b1:
                             if st.button("✅ Sisteme Ekle", key=f"ekle_{idx}"):
                                 pd.DataFrame({"mesaj": [row['mesaj']], "etiket": [row['etiket']]}).to_csv("dataset.csv", mode="a", header=False, index=False)
-                                
                                 bekleyen_df = bekleyen_df.drop(idx)
                                 bekleyen_df.to_csv("onay_bekleyenler.csv", index=False)
-                                
                                 st.cache_resource.clear()
                                 st.rerun()
                         with b2:
