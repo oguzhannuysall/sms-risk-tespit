@@ -551,23 +551,17 @@ def admin_tanimli_mi():
 # 9. YAN MENÜ
 # ======================================================================
 st.sidebar.title("📌 Menü")
-if st.sidebar.button("🏠 Ana Sayfa", use_container_width=True):
+if st.sidebar.button("🏠 Ana Sayfa", width="stretch"):
     st.session_state.sayfa = "🏠 Karşılama Ekranı"
-if st.sidebar.button("🛡️ SMS Kontrol Aracı", use_container_width=True):
+if st.sidebar.button("🛡️ SMS Kontrol Aracı", width="stretch"):
     st.session_state.sayfa = "🛡️ SMS Analizörü"
-if st.sidebar.button("📥 Mesaj Öner", use_container_width=True):
+if st.sidebar.button("📥 Mesaj Öner", width="stretch"):
     st.session_state.sayfa = "📥 Sisteme Katkı Sağla"
-if st.sidebar.button("🧠 Sistem Nasıl Çalışır?", use_container_width=True):
+if st.sidebar.button("🧠 Sistem Nasıl Çalışır?", width="stretch"):
     st.session_state.sayfa = "🧠 YZ ve Doğrulama"
-if st.sidebar.button("👨‍💻 Yönetici Paneli", use_container_width=True):
+if st.sidebar.button("👨‍💻 Yönetici Paneli", width="stretch"):
     st.session_state.sayfa = "👨‍💻 Admin Paneli"
 
-st.sidebar.divider()
-if claude_istemci() is None:
-    st.sidebar.caption("🤖 Claude katmanı kapalı (API anahtarı veya `anthropic` paketi yok). Kural + ML çalışıyor.")
-else:
-    st.sidebar.toggle("🤖 Claude derin analiz", key="claude_acik",
-                      help="Belirsiz mesajlar kişisel veriler maskelenerek Claude'a gönderilir.")
 st.sidebar.divider()
 
 st.sidebar.markdown("""
@@ -609,6 +603,13 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Claude durumu: yan menünün en altında, göze batmayacak şekilde
+if claude_istemci() is None:
+    st.sidebar.caption("🤖 Claude katmanı kapalı · Kural + ML çalışıyor")
+else:
+    st.sidebar.toggle("🤖 Claude derin analiz", key="claude_acik",
+                      help="Belirsiz mesajlar kişisel veriler maskelenerek Claude'a gönderilir.")
+
 # ÜST DURUM ÇUBUĞU
 df = veri_oku()
 claude_rozet = "🤖 Claude Aktif" if (claude_istemci() and st.session_state.claude_acik) else "🤖 Claude Kapalı"
@@ -639,7 +640,7 @@ if st.session_state.sayfa == "🏠 Karşılama Ekranı":
     st.write("")
     _, col2, _ = st.columns([1, 2, 1])
     with col2:
-        if st.button("🚀 HEMEN MESAJ TEST ET", type="primary", use_container_width=True):
+        if st.button("🚀 HEMEN MESAJ TEST ET", type="primary", width="stretch"):
             st.session_state.sayfa = "🛡️ SMS Analizörü"
             st.rerun()
 
@@ -651,16 +652,16 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
     st.write("Merak ettiğiniz mesajı kutuya yapıştırın ya da aşağıdaki örnek butonlarına tıklayın.")
 
     colA, colB, colC, colD = st.columns(4)
-    colA.button("🚨 İcra / Banka Tuzağı", on_click=ornek_getir, args=("icra_banka",), use_container_width=True)
-    colB.button("📦 Sahte Kargo / Ödül", on_click=ornek_getir, args=("kargo_odul",), use_container_width=True)
-    colC.button("🕵️ Gizlenmiş Kelime", on_click=ornek_getir, args=("kelime_oyunu",), use_container_width=True)
-    colD.button("✅ Güvenli Kurum Mesajı", on_click=ornek_getir, args=("guvenli",), use_container_width=True)
+    colA.button("🚨 İcra / Banka Tuzağı", on_click=ornek_getir, args=("icra_banka",), width="stretch")
+    colB.button("📦 Sahte Kargo / Ödül", on_click=ornek_getir, args=("kargo_odul",), width="stretch")
+    colC.button("🕵️ Gizlenmiş Kelime", on_click=ornek_getir, args=("kelime_oyunu",), width="stretch")
+    colD.button("✅ Güvenli Kurum Mesajı", on_click=ornek_getir, args=("guvenli",), width="stretch")
 
     mesaj_girdisi = st.text_area("Kontrol Edilecek SMS Metni:", key="aktif_mesaj", height=115, max_chars=1000,
                                  placeholder="Buraya test etmek istediğiniz mesajı yazın veya yapıştırın...")
     b1, b2 = st.columns([4, 1])
-    analiz_baslat = b1.button("🔍 Mesajı Güvenli mi Diye Kontrol Et", type="primary", use_container_width=True)
-    b2.button("🗑️ Temizle", on_click=kutuyu_temizle, use_container_width=True)
+    analiz_baslat = b1.button("🔍 Mesajı Güvenli mi Diye Kontrol Et", type="primary", width="stretch")
+    b2.button("🗑️ Temizle", on_click=kutuyu_temizle, width="stretch")
 
     mesaj = mesaj_girdisi.strip()
     son = st.session_state.son_sonuc
@@ -767,7 +768,7 @@ elif st.session_state.sayfa == "🧠 YZ ve Doğrulama":
             cm = metrikler["cm"]
             st.markdown("**Karışıklık matrisi**")
             st.dataframe(pd.DataFrame(cm, index=["Gerçek: Güvenli", "Gerçek: Tuzak"], columns=["Tahmin: Güvenli", "Tahmin: Tuzak"]),
-                         use_container_width=True)
+                         width="stretch")
             st.caption(f"Kaçırılan tuzak: {cm[1][0]} · Yanlış alarm: {cm[0][1]}")
         else:
             st.info("Anlamlı metrik için en az 30 kayıt ve her sınıftan en az 6 örnek gerekir. Admin panelinden onaylanan öneriler arttıkça burası dolacak.")
@@ -797,7 +798,7 @@ elif st.session_state.sayfa == "🧠 YZ ve Doğrulama":
                                  "Sistem": "🚨 Tuzak" if tahmin else "✅ Güvenli", "Risk": f"%{skor}",
                                  "Sonuç": "✔️ Doğru" if tahmin == gercek else "❌ Yanlış"})
             st.metric("Demo Doğru Sayısı", f"{dogru} / 10")
-            st.dataframe(pd.DataFrame(satirlar), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(satirlar), width="stretch", hide_index=True)
 
     with tab2:
         st.markdown("""
@@ -851,6 +852,8 @@ elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
         c2.metric("Tuzak Mesaj", f"{phishing_sayisi}")
         c3.metric("Güvenli Mesaj", f"{guvenli_sayisi}")
         c4.metric("Bugünkü Claude Çağrısı", f"{bugunku_kullanim()} / {sir('GUNLUK_CLAUDE_LIMIT', 200)}")
+        if claude_istemci() is None:
+            st.caption("ℹ️ Claude kapalı: Streamlit Secrets'ta `ANTHROPIC_API_KEY` yok ya da `requirements.txt` içinde `anthropic` eksik.")
 
         st.divider()
         st.subheader("📈 Veri Dağılımı")
@@ -899,7 +902,7 @@ elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
         st.subheader("💬 Kullanıcıların “Yanlış” Dediği Sonuçlar")
         yanlislar = sorgu("SELECT mesaj, risk, tarih FROM geri_bildirim WHERE dogru = 0 ORDER BY id DESC LIMIT 50")
         if yanlislar:
-            st.dataframe(pd.DataFrame(yanlislar, columns=["Mesaj", "Verilen Risk", "Tarih"]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(yanlislar, columns=["Mesaj", "Verilen Risk", "Tarih"]), width="stretch", hide_index=True)
             st.caption("Bu mesajları inceleyip doğru etiketle veri setine ekleyerek modeli iyileştirebilirsiniz.")
         else:
             st.info("Henüz olumsuz geri bildirim yok.")
