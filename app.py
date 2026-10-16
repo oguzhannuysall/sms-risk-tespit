@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import random
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
@@ -64,23 +65,46 @@ if st.session_state.sayfa == "🏠 Karşılama Ekranı":
             st.session_state.sayfa = "🛡️ SMS Analizörü"
             st.rerun()
 
-# --- SAYFA 2: SMS ANALİZÖRÜ ---
+# --- SAYFA 2: SMS ANALİZÖRÜ (DİNAMİK ÖRNEKLERLE GÜNCELLENDİ) ---
 elif st.session_state.sayfa == "🛡️ SMS Analizörü":
     st.title("🛡️ Akıllı SMS Analizörü")
     
     if "mesaj_kutusu" not in st.session_state:
         st.session_state.mesaj_kutusu = ""
 
+    # DİNAMİK MESAJ HAVUZLARI
+    icra_banka_mesajlari = [
+        "Sn. (Adınız), hakkınızda açılacak cinsel taciz davası bulunmaktadır. Uzlaştırma bedeli için hesaba para yatırın. link.com",
+        "Sayin musteri hesabiniza bloke konulmustur. Acil islem icin tiklayin: tinyurl.com/banka-onay",
+        "Yasa disi bahis oynadiginiz tespit edilmistir. 45.000 TL cezanizi odemek icin iletisime gecin.",
+        "Dosyanız adliyeye sevk edilecektir. Mağdur olmamak için hemen dönüş yapınız."
+    ]
+    
+    kargo_odul_mesajlari = [
+        "PTT Kargo: Gonderiniz adres hatasi nedeniyle teslim edilemedi. Guncellemek icin tiklayin: http://bit.ly/kargo-onay",
+        "MNG Kargo: Dağıtıma çıkan kargonuz adres yetersizliğinden iade edilmiştir. Detay: kargo-takip.xyz",
+        "Yurtiçi Kargo: Teslimatınız başarısız oldu. Yeniden dağıtım ücretini ödemek için linke girin: kargo-odeme.net",
+        "Tebrikler! 10.000 TL degerinde hediye ceki kazandiniz. Hemen alin: odul-al.net"
+    ]
+    
+    guvenli_mesajlar = [
+        "Yarın saat 14:00'te toplantımız var, lütfen gecikmeyin. İyi çalışmalar.",
+        "Kanka yarın akşam halı saha maçımız var, gelmeyi unutma.",
+        "Kredi kartı ekstreniz e-posta adresinize gönderilmiştir. Ziraat Bankası",
+        "Ders programı güncellendi WhatsApp grubundan bakabilirsiniz.",
+        "Kiranızı ayın 5'ine kadar yatırmanızı rica ederim."
+    ]
+
     colA, colB, colC = st.columns(3)
     with colA:
-        if st.button("🚨 Örnek İcra Mesajı", use_container_width=True):
-            st.session_state.mesaj_kutusu = "Sn. (Adınız), hakkınızda açılacak cinsel taciz davası bulunmaktadır. Uzlaştırma bedeli için hesaba para yatırın. link.com"
+        if st.button("🚨 Örnek İcra/Banka (Rastgele)", use_container_width=True):
+            st.session_state.mesaj_kutusu = random.choice(icra_banka_mesajlari)
     with colB:
-        if st.button("📦 Örnek Sahte Kargo", use_container_width=True):
-            st.session_state.mesaj_kutusu = "PTT Kargo: Gonderiniz adres hatasi nedeniyle teslim edilemedi. Guncellemek icin tiklayin: http://bit.ly/kargo-onay"
+        if st.button("📦 Örnek Kargo/Ödül (Rastgele)", use_container_width=True):
+            st.session_state.mesaj_kutusu = random.choice(kargo_odul_mesajlari)
     with colC:
-        if st.button("✅ Örnek Güvenli Mesaj", use_container_width=True):
-            st.session_state.mesaj_kutusu = "Yarın saat 14:00'te toplantımız var, lütfen gecikmeyin. İyi çalışmalar."
+        if st.button("✅ Örnek Güvenli (Rastgele)", use_container_width=True):
+            st.session_state.mesaj_kutusu = random.choice(guvenli_mesajlar)
 
     mesaj_girdisi = st.text_area("Mesajınız:", value=st.session_state.mesaj_kutusu, height=130)
 
@@ -131,7 +155,7 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                 for g in gerekceler:
                     st.markdown(g)
 
-# --- SAYFA 3: SİSTEME KATKI SAĞLA (YENİ EKLENEN ÖZELLİK) ---
+# --- SAYFA 3: SİSTEME KATKI SAĞLA ---
 elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
     st.title("📥 Veri Setine Katkıda Bulunun")
     st.markdown("""
@@ -150,21 +174,16 @@ elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
         if yeni_mesaj.strip() == "":
             st.warning("Lütfen boş bir mesaj eklemeyin.")
         else:
-            # Etiketi belirleme (1 veya 0)
             etiket_degeri = 1 if "Dolandırıcılık" in etiket_secimi else 0
-            
-            # Alt satırlara geçişleri (Enter) temizleyelim ki CSV dosyası bozulmasın
             temiz_mesaj = yeni_mesaj.replace('\n', ' ').replace('\r', '')
             
-            # Veriyi CSV dosyasına ekleme işlemi
             yeni_veri = pd.DataFrame({"mesaj": [temiz_mesaj], "etiket": [etiket_degeri]})
             yeni_veri.to_csv("dataset.csv", mode="a", header=False, index=False)
             
-            # Sistemi yeni veriyle zorla yeniden eğitmek için önbelleği temizliyoruz
             st.cache_resource.clear()
             
             st.success("🎉 Harika! Mesajınız başarıyla veri setine eklendi. Yapay zeka modeli şu an yeni verinizle yeniden eğitildi.")
-            st.balloons() # Ekranda kutlama balonları uçurur
+            st.balloons()
 
 # --- SAYFA 4: YZ VE SKORLAMA ---
 elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
