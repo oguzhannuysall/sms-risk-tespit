@@ -6,55 +6,61 @@ import os
 import socket
 
 # --- 1. PERFORMANS OPTİMİZASYONLARI ---
-# IP aramasına 2 saniye sınır (Sistemin donmasını engeller)
 socket.setdefaulttimeout(2.0) 
-# Regex kurallarını her butona basıldığında baştan hesaplamamak için önceden derliyoruz (Hızlandırıcı)
 LINK_REGEX = re.compile(r"(https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)", re.IGNORECASE)
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 
-# --- 2. SAYFA AYARLARI VE GLOBAL CSS (PROFESYONEL ARAYÜZ) ---
+# --- 2. SAYFA AYARLARI VE ESTETİK ÖZEL CSS (PROFESYONEL KOYU TEMA) ---
 st.set_page_config(page_title="Akıllı SMS Analizörü", page_icon="🛡️", layout="wide")
 
-# Özel CSS: Metrik kartları, butonlar ve metin kutuları için modern UI
 st.markdown("""
     <style>
-    /* Buton Tasarımları */
+    /* Genel Arka Plan ve Yazı Stili */
+    .stApp {
+        background-color: #0E1117;
+        color: #FAFAFA;
+    }
+    /* Buton Tasarımları - Profesyonel Neon Geçişli */
     div.stButton > button:first-child {
-        border-radius: 8px;
+        border-radius: 10px;
         font-weight: 600;
+        background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+        color: white;
         transition: all 0.3s ease;
-        border: 1px solid rgba(150, 150, 150, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     div.stButton > button:first-child:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 6px 20px rgba(78, 67, 118, 0.5);
         border-color: #26D0CE;
     }
-    /* İstatistik / Metrik Kartları */
+    /* Metrik Kartları - Estetik Çerçeve */
     div[data-testid="metric-container"] {
-        background-color: rgba(38, 208, 206, 0.05);
+        background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(38, 208, 206, 0.2);
         padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        border-radius: 14px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
-    /* Metin Giriş Kutusu */
+    /* Metin Giriş Kutusu Estetiği */
     .stTextArea textarea {
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background-color: #161B22;
+        color: #FAFAFA;
     }
-    /* Uyarı ve Bilgi Kutuları */
-    div.stAlert {
-        border-radius: 10px;
+    /* Sidebar (Yan Menü) Tasarımı */
+    [data-testid="stSidebar"] {
+        background-color: #11161D;
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. MODEL YÜKLEME (Önbellekleme / Caching ile Hızlandırma) ---
+# --- 3. MODEL YÜKLEME (Önbellekleme) ---
 @st.cache_resource(show_spinner=False)
 def modeli_yukle():
     try:
@@ -94,33 +100,33 @@ if st.sidebar.button("👨‍💻 Admin Paneli", use_container_width=True):
 
 st.sidebar.divider()
 
-# Dinamik Animasyonlu Kutu
+# Dinamik Animasyonlu Bilgi Kutusu (Estetik Neon Tasarım)
 dinamik_kutu_html = """
 <style>
 .info-box {
-    background: linear-gradient(135deg, #1A2980 0%, #26D0CE 100%);
-    border-radius: 12px;
-    padding: 15px;
-    color: white;
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    border-radius: 14px;
+    padding: 16px;
+    color: #e0e6ed;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 13.5px;
+    font-size: 13px;
     line-height: 1.5;
-    box-shadow: 0 4px 15px rgba(38, 208, 206, 0.4);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     text-align: center;
-    height: 190px;
+    height: 195px;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(38, 208, 206, 0.3);
     margin-bottom: 20px;
 }
 .info-header {
     font-weight: 800;
-    font-size: 16px;
-    margin-bottom: 10px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    color: #FFD700;
+    font-size: 15px;
+    margin-bottom: 8px;
+    color: #00f2fe;
+    letter-spacing: 0.5px;
 }
 .text-container {
     position: relative;
@@ -135,7 +141,6 @@ dinamik_kutu_html = """
     width: 100%;
     opacity: 0;
     animation: fadeCycle 60s infinite;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 }
 .ticker-text:nth-child(1) { animation-delay: 0s; }
 .ticker-text:nth-child(2) { animation-delay: 10s; }
@@ -145,22 +150,22 @@ dinamik_kutu_html = """
 .ticker-text:nth-child(6) { animation-delay: 50s; }
 
 @keyframes fadeCycle {
-    0% { opacity: 0; transform: translateY(10px); }
-    2% { opacity: 1; transform: translateY(0); }
+    0% { opacity: 0; transform: translateY(8px); }
+    3% { opacity: 1; transform: translateY(0); }
     15% { opacity: 1; transform: translateY(0); }
-    17% { opacity: 0; transform: translateY(-10px); }
-    100% { opacity: 0; transform: translateY(-10px); }
+    18% { opacity: 0; transform: translateY(-8px); }
+    100% { opacity: 0; transform: translateY(-8px); }
 }
 </style>
 <div class="info-box">
-    <div class="info-header">💡 Biliyor muydunuz?</div>
+    <div class="info-header">💡 SİBER İSTİHBARAT</div>
     <div class="text-container">
         <div class="ticker-text">Dünya genelinde siber saldırıların <b>%80'inden fazlası</b> sosyal mühendislik ve oltalama yöntemleriyle başlar.</div>
         <div class="ticker-text">Kullanıcıların SMS ile gelen oltalama linklerine tıklama oranı, e-postalara göre <b>3 kat daha fazladır.</b></div>
         <div class="ticker-text">İnsanların %90'ı gelen bir SMS'i <b>ilk 3 dakika içerisinde</b> okur. Dolandırıcılar bu aciliyet refleksini kullanır.</div>
-        <div class="ticker-text">Sadece 2023 yılında, sahte kargo ve banka SMS'leri yüzünden dünya çapında <b>milyarlarca dolar</b> maddi kayıp yaşanmıştır.</div>
-        <div class="ticker-text">SMS oltalama (Smishing) saldırıları son 2 yılda <b>%300'ün üzerinde artış</b> göstererek en tehlikeli mobil tehdit olmuştur.</div>
-        <div class="ticker-text">Dolandırıcılar genellikle <b>tatil günleri ve mesai saatleri dışında</b> SMS atarak kurbanın kurumları arayıp teyit etmesini engeller.</div>
+        <div class="ticker-text">Sadece 2023 yılında, sahte kargo ve banka SMS'leri yüzünden dünya çapında <b>milyarlarca dolar</b> kayıp yaşanmıştır.</div>
+        <div class="ticker-text">SMS oltalama (Smishing) saldırıları son 2 yılda <b>%300'ün üzerinde artış</b> göstererek en kritik mobil tehdit olmuştur.</div>
+        <div class="ticker-text">Dolandırıcılar genellikle <b>tatil ve mesai saatleri dışında</b> SMS atarak kurbanın kurumları arayıp teyit etmesini engeller.</div>
     </div>
 </div>
 """
@@ -172,13 +177,13 @@ st.sidebar.info("👨‍💻 **Proje Geliştiricileri:**\n\n- Muzaffer Alp Ergü
 if st.session_state.sayfa == "🏠 Karşılama Ekranı":
     st.title("Hoş Geldiniz! 🛡️ SMS Phishing Tespit Sistemi")
     st.markdown("""
-    ### Siber Güvenliğiniz İçin Akıllı Çözüm
+    ### Siber Güvenliğiniz İçin Yeni Nesil Yapay Zeka Çözümü
     Günümüzde artan **sahte kargo, icra takibi ve banka dolandırıcılığı** mesajlarına karşı 
-    geliştirdiğimiz bu yapay zeka sistemi, SMS'lerinizi analiz ederek sizi tehlikelere karşı uyarır.
+    geliştirdiğimiz bu akıllı sistem, gelen iletileri saniyeler içinde analiz eder.
     
-    * ⚡ **Anında Analiz:** Güçlü NLP motoru ile saniyeler içinde risk tespiti.
-    * 🌍 **Canlı IP Çözümleme:** Tıklamadan önce linklerin gerçek sunucularını tespit etme.
-    * 🧠 **Dinamik Öğrenme:** Kitle kaynaklı verilerle her geçen gün akıllanan model.
+    * ⚡ **Anında NLP Analizi:** Metin yapısını ve bağlamı saniyeler içinde çözer.
+    * 🌍 **Canlı IP Çözümleme:** Bağlantıların arka plandaki gerçek sunucu IP adreslerini denetler.
+    * 🧠 **Sürekli Öğrenme:** Kitle kaynaklı geri bildirimlerle kendini dinamik olarak günceller.
     """)
     st.write("")
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -190,7 +195,7 @@ if st.session_state.sayfa == "🏠 Karşılama Ekranı":
 # --- SAYFA 2: SMS ANALİZÖR ---
 elif st.session_state.sayfa == "🛡️ SMS Analizörü":
     st.title("🛡️ Akıllı SMS Analizörü")
-    st.write("Şüpheli mesajınızı aşağıya yapıştırın veya sistemin yeteneklerini görmek için örnek butonları kullanın.")
+    st.write("Şüpheli mesajınızı aşağıya yapıştırın veya hızlı test butonlarını kullanın.")
     
     if "mesaj_kutusu" not in st.session_state:
         st.session_state.mesaj_kutusu = ""
@@ -213,13 +218,13 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
 
     colA, colB, colC = st.columns(3)
     with colA:
-        if st.button("🚨 Örnek İcra/Banka (Rastgele)", use_container_width=True):
+        if st.button("🚨 Örnek İcra/Banka", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(icra_banka_mesajlari)
     with colB:
-        if st.button("📦 Örnek Kargo/Ödül (Rastgele)", use_container_width=True):
+        if st.button("📦 Örnek Kargo/Ödül", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(kargo_odul_mesajlari)
     with colC:
-        if st.button("✅ Örnek Güvenli (Rastgele)", use_container_width=True):
+        if st.button("✅ Örnek Güvenli", use_container_width=True):
             st.session_state.mesaj_kutusu = random.choice(guvenli_mesajlar)
 
     mesaj_girdisi = st.text_area("Analiz Edilecek SMS Metni:", value=st.session_state.mesaj_kutusu, height=130)
@@ -233,7 +238,6 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
             guvenli_domainler = ["youtube.com", "youtu.be", "google.com", "instagram.com", "turkiye.gov.tr", "edu.tr", "whatsapp.com", "github.com", "twitter.com"]
             kisaltilmis_linkler = ["bit.ly", "tinyurl.com", "t.co", "ow.ly", "cutt.ly", "is.gd"]
             
-            # Hızlandırılmış derlenmiş Regex kullanımı
             bulunan_linkler = LINK_REGEX.findall(mesaj_girdisi)
             
             guvenli_link_var = False
@@ -245,7 +249,7 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                     
                     if any(guvenli in domain for guvenli in guvenli_domainler):
                         guvenli_link_var = True
-                        gerekceler.append(f"🌐 **Güvenilir Bağlantı:** '{domain}' adresi sistemin güvenilir beyaz listesinde (Whitelist) yer almaktadır.")
+                        gerekceler.append(f"🌐 **Güvenilir Bağlantı:** '{domain}' adresi sistemin güvenilir beyaz listesinde yer almaktadır.")
                     else:
                         tehlikeli_link_var = True
                         try:
@@ -276,10 +280,10 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
             ml_tahmin = model.predict([mesaj_girdisi])[0]
             if ml_tahmin == 1:
                 if guvenli_link_var and not tehlikeli_link_var and risk_skoru == 0:
-                    gerekceler.append("🧠 **Yapay Zeka Notu:** Mesaj yapısı şüpheli bulunsa da, içindeki bağlantı resmi bir kuruma ait olduğu için YZ riski sıfırlandı.")
+                    gerekceler.append("🧠 **Yapay Zeka Notu:** Mesaj yapısı şüpheli bulunsa da bağlantı resmi bir kuruma ait olduğu için risk sıfırlandı.")
                     risk_skoru = 0
                 else:
-                    gerekceler.append("🧠 **Yapay Zeka Analizi:** NLP Motoru, bu cümlenin semantik yapısını önceki dolandırıcılık vakalarıyla eşleştirdi.")
+                    gerekceler.append("🧠 **Yapay Zeka Analizi:** NLP Motoru, bu cümlenin semantik yapısını dolandırıcılık vakalarıyla eşleştirdi.")
                     risk_skoru += 20
 
             toplam_risk = min(risk_skoru, 100)
@@ -290,9 +294,9 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                 st.metric(label="Hesaplanan Risk Skoru", value=f"%{toplam_risk}")
             with sonuc_col2:
                 if toplam_risk >= 70:
-                    st.error("🚨 KRİTİK RİSK: Bu mesaj %99 ihtimalle dolandırıcılık (phishing) amaçlıdır! Kesinlikle itibar etmeyiniz.")
+                    st.error("🚨 KRİTİK RİSK: Bu mesaj %99 ihtimalle dolandırıcılık (phishing) amaçlıdır!")
                 elif 30 <= toplam_risk < 70:
-                    st.warning("⚠️ ŞÜPHELİ: Bu mesajda riskli unsurlar bulundu. Teyit etmeden hiçbir işlem yapmayın.")
+                    st.warning("⚠️ ŞÜPHELİ: Bu mesajda riskli unsurlar bulundu. Teyit etmeden işlem yapmayın.")
                 else:
                     st.success("✅ GÜVENLİ: Bu mesajda belirgin bir siber güvenlik riski tespit edilmedi.")
 
@@ -306,7 +310,7 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
 # --- SAYFA 3: SİSTEME KATKI SAĞLA ---
 elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
     st.title("📥 Veri Setine Katkıda Bulunun")
-    st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sistemin makine öğrenmesi algoritmasına dahil edilecektir.")
+    st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sisteme dahil edilecektir.")
     
     yeni_mesaj = st.text_area("Önereceğiniz mesajı yazın:")
     etiket_secimi = st.radio("Bu mesajın türü nedir?", ["🚨 Dolandırıcılık / Oltalama Mesajı (Phishing)", "✅ Normal / Güvenli Mesaj"])
@@ -336,10 +340,10 @@ elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     * **Yapay Zeka (Bağlam Eşleşmesi):** +20 Puan
     
     ### 2. IP Çözümleme Teknolojisi (DNS Lookup)
-    Mesaj içerisinde tespit edilen her bağlantı, sistem tarafından "Beyaz Liste" (Whitelist) taramasından geçirilir. Yabancı bir alan adı tespit edilirse, sistem arka planda bir DNS sorgusu çalıştırarak dolandırıcı sunucunun **IP adresini** tespit edip raporlar.
+    Mesaj içerisindeki bağlantılar "Beyaz Liste" (Whitelist) taramasından geçirilir. Yabancı alan adları için DNS sorgusu yapılarak sunucu **IP adresi** raporlanır.
     
     ### 3. Makine Öğrenmesi (NLP) Motoru
-    Scikit-Learn kütüphanesi üzerinde çalışan **TF-IDF Vectorizer** (Metni matematiğe dönüştürme) ve **Multinomial Naive Bayes** (Olasılık tahmini) algoritmaları kullanılmıştır.
+    Scikit-Learn kütüphanesi üzerinde çalışan **TF-IDF Vectorizer** ve **Multinomial Naive Bayes** algoritmaları ile optimize edilmiştir.
     """)
 
 # --- SAYFA 5: ADMİN PANELİ ---
