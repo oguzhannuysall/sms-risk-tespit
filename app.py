@@ -140,4 +140,114 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
             sonuc_col1, sonuc_col2 = st.columns([1, 2])
             with sonuc_col1:
                 st.metric(label="Hesaplanan Risk Skoru", value=f"%{toplam_risk}")
-            with sonuc
+            with sonuc_col2:
+                if toplam_risk >= 70:
+                    st.error("🚨 KRİTİK RİSK: Bu mesaj %99 ihtimalle dolandırıcılık (phishing) amaçlıdır!")
+                elif 30 <= toplam_risk < 70:
+                    st.warning("⚠️ ŞÜPHELİ: Bu mesajda riskli unsurlar bulundu. Teyit etmeden işlem yapmayın.")
+                else:
+                    st.success("✅ GÜVENLİ: Bu mesajda belirgin bir dolandırıcılık riski tespit edilmedi.")
+
+            if toplam_risk > 0:
+                st.subheader("🔍 Tespit Edilen Risk Nedenleri:")
+                for g in gerekceler:
+                    st.markdown(g)
+
+# --- SAYFA 3: SİSTEME KATKI SAĞLA (Kullanıcı Ekranı) ---
+elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
+    st.title("📥 Veri Setine Katkıda Bulunun")
+    st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sisteme dahil edilecektir.")
+    
+    yeni_mesaj = st.text_area("Önereceğiniz mesajı yazın:")
+    etiket_secimi = st.radio("Bu mesajın türü nedir?", ["🚨 Dolandırıcılık / Oltalama Mesajı (Phishing)", "✅ Normal / Güvenli Mesaj"])
+    
+    if st.button("📤 Mesajı Onaya Gönder", type="primary"):
+        if yeni_mesaj.strip() == "":
+            st.warning("Lütfen boş bir mesaj eklemeyin.")
+        else:
+            etiket_degeri = 1 if "Dolandırıcılık" in etiket_secimi else 0
+            temiz_mesaj = yeni_mesaj.replace('\n', ' ').replace('\r', '')
+            
+            yeni_veri = pd.DataFrame({"mesaj": [temiz_mesaj], "etiket": [etiket_degeri]})
+            
+            if not os.path.exists("onay_bekleyenler.csv"):
+                yeni_veri.to_csv("onay_bekleyenler.csv", mode="w", index=False)
+            else:
+                yeni_veri.to_csv("onay_bekleyenler.csv", mode="a", header=False, index=False)
+            
+            st.success("✅ Mesajınız başarıyla yönetici onay havuzuna gönderildi! İlginiz için teşekkürler.")
+
+# --- SAYFA 4: YZ VE SKORLAMA ---
+elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
+    st.title("🧠 Yapay Zeka ve Skorlama Altyapısı")
+    st.markdown("""
+    ### 1. Risk Skoru Neye Göre Hesaplanıyor?
+    * **Şüpheli Linkler (URL/Kısaltma):** +45 Puan
+    * **Hukuki Tehdit & Korkutma Dili:** +35 Puan
+    * **Doğrudan Para/IBAN Talebi:** +35 Puan
+    * **Yapay Zeka (Bağlam Eşleşmesi):** +20 Puan
+    
+    ### 2. Hangi Yapay Zeka Kullanıldı?
+    **TF-IDF Vectorizer** ve **Multinomial Naive Bayes** kullanılmıştır.
+    """)
+
+# --- SAYFA 5: ADMİN PANELİ (GİZLİ EKRAN) ---
+elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
+    st.title("🔒 Yönetici (Admin) Paneli")
+    st.info("Bu panele sadece proje yöneticileri şifre ile erişebilir.")
+    
+    # Şifre Koruma Alanı (Şifreniz: admin123)
+    girilen_sifre = st.text_input("Lütfen Yönetici Şifresini Giriniz:", type="password")
+    
+    if girilen_sifre == "admin123":
+        st.success("Giriş Başarılı. Yönetici Paneline Hoş Geldiniz.")
+        st.divider()
+        
+        # 1. Canlı Modelin İstatistikleri
+        st.subheader("📊 Sistemdeki Güncel Veri Seti İstatistikleri")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(label="Toplam Eğitilmiş Mesaj", value=f"{len(df)}")
+        with col2:
+            st.metric(label="Dolandırıcılık (Phishing)", value=f"{len(df[df['etiket'] == 1])}")
+        with col3:
+            st.metric(label="Güvenli (Normal)", value=f"{len(df[df['etiket'] == 0])}")
+            
+        st.divider()
+        
+        # 2. Onay Bekleyen Mesajlar Havuzu
+        st.subheader("⏳ Onay Bekleyen (Kullanıcılardan Gelen) Mesajlar")
+        
+        if os.path.exists("onay_bekleyenler.csv"):
+            bekleyen_df = pd.read_csv("onay_bekleyenler.csv")
+            
+            if len(bekleyen_df) > 0:
+                for idx, row in bekleyen_df.iterrows():
+                    with st.container():
+                        mesaj_turu = "🚨 Phishing (Dolandırıcı)" if row['etiket'] == 1 else "✅ Güvenli"
+                        st.markdown(f"**Mesaj:** {row['mesaj']}")
+                        st.markdown(f"**Önerilen Etiket:** {mesaj_turu}")
+                        
+                        b1, b2, b3 = st.columns([1, 1, 4])
+                        with b1:
+                            if st.button("✅ Sisteme Ekle", key=f"ekle_{idx}"):
+                                pd.DataFrame({"mesaj": [row['mesaj']], "etiket": [row['etiket']]}).to_csv("dataset.csv", mode="a", header=False, index=False)
+                                
+                                bekleyen_df = bekleyen_df.drop(idx)
+                                bekleyen_df.to_csv("onay_bekleyenler.csv", index=False)
+                                
+                                st.cache_resource.clear()
+                                st.rerun()
+                        with b2:
+                            if st.button("🗑️ Reddet (Sil)", key=f"sil_{idx}"):
+                                bekleyen_df = bekleyen_df.drop(idx)
+                                bekleyen_df.to_csv("onay_bekleyenler.csv", index=False)
+                                st.rerun()
+                    st.markdown("---")
+            else:
+                st.info("Harika! Şu an onay bekleyen hiçbir mesaj yok.")
+        else:
+            st.info("Harika! Şu an onay bekleyen hiçbir mesaj yok.")
+    
+    elif girilen_sifre != "":
+        st.error("Hatalı Şifre! Lütfen tekrar deneyin.")
