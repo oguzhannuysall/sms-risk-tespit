@@ -39,7 +39,7 @@ KATEGORILER = {
 if "sayfa" not in st.session_state:
     st.session_state.sayfa = "🏠 Karşılama Ekranı"
 
-# --- YAN MENÜ VE DİNAMİK İSTATİSTİK ---
+# --- YAN MENÜ ---
 st.sidebar.title("📌 Navigasyon")
 if st.sidebar.button("🏠 Karşılama Ekranı", use_container_width=True):
     st.session_state.sayfa = "🏠 Karşılama Ekranı"
@@ -53,21 +53,80 @@ if st.sidebar.button("👨‍💻 Admin Paneli", use_container_width=True):
     st.session_state.sayfa = "👨‍💻 Admin Paneli"
 
 st.sidebar.divider()
-st.sidebar.info("👨‍💻 Proje Sahipleri:\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
 
-# --- YENİ BÖLÜM: DİNAMİK SİBER GÜVENLİK İSTATİSTİKLERİ ---
-st.sidebar.divider()
-st.sidebar.subheader("💡 Biliyor muydunuz?")
-istatistikler = [
-    "Dünya genelinde siber saldırıların %80'inden fazlası sosyal mühendislik ve oltalama (phishing) yöntemleriyle başlar.",
-    "Kullanıcıların SMS ile gelen oltalama (Smishing) linklerine tıklama oranı, e-postalara göre 3 kat daha fazladır.",
-    "İnsanların %90'ı gelen bir SMS'i ilk 3 dakika içerisinde okur. Dolandırıcılar bu aciliyet refleksini kullanır.",
-    "Sadece 2023 yılında, sahte kargo ve banka SMS'leri yüzünden dünya çapında milyarlarca dolar maddi kayıp yaşanmıştır.",
-    "SMS oltalama (Smishing) saldırıları son 2 yılda %300'ün üzerinde artış göstererek en tehlikeli mobil tehdit haline gelmiştir.",
-    "Dolandırıcılar genellikle tatil günleri ve mesai saatleri dışında (akşamları) SMS atarak kurbanın kurumları arayıp teyit etmesini engeller."
-]
-# Her sayfa yenilendiğinde veya butona basıldığında rastgele bir istatistik seçilir
-st.sidebar.warning(random.choice(istatistikler))
+# --- DİNAMİK VE ALBENİLİ İSTATİSTİK KUTUCUGU (CSS ANİMASYONLU) ---
+dinamik_kutu_html = """
+<style>
+.info-box {
+    background: linear-gradient(135deg, #1A2980 0%, #26D0CE 100%);
+    border-radius: 12px;
+    padding: 15px;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+    box-shadow: 0 4px 15px rgba(38, 208, 206, 0.4);
+    text-align: center;
+    height: 190px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 20px;
+}
+.info-header {
+    font-weight: 800;
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    color: #FFD700;
+}
+.text-container {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ticker-text {
+    position: absolute;
+    width: 100%;
+    opacity: 0;
+    animation: fadeCycle 60s infinite;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+}
+.ticker-text:nth-child(1) { animation-delay: 0s; }
+.ticker-text:nth-child(2) { animation-delay: 10s; }
+.ticker-text:nth-child(3) { animation-delay: 20s; }
+.ticker-text:nth-child(4) { animation-delay: 30s; }
+.ticker-text:nth-child(5) { animation-delay: 40s; }
+.ticker-text:nth-child(6) { animation-delay: 50s; }
+
+@keyframes fadeCycle {
+    0% { opacity: 0; transform: translateY(10px); }
+    2% { opacity: 1; transform: translateY(0); }
+    15% { opacity: 1; transform: translateY(0); }
+    17% { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+</style>
+<div class="info-box">
+    <div class="info-header">💡 Biliyor muydunuz?</div>
+    <div class="text-container">
+        <div class="ticker-text">Dünya genelinde siber saldırıların <b>%80'inden fazlası</b> sosyal mühendislik ve oltalama yöntemleriyle başlar.</div>
+        <div class="ticker-text">Kullanıcıların SMS ile gelen oltalama linklerine tıklama oranı, e-postalara göre <b>3 kat daha fazladır.</b></div>
+        <div class="ticker-text">İnsanların %90'ı gelen bir SMS'i <b>ilk 3 dakika içerisinde</b> okur. Dolandırıcılar bu aciliyet refleksini kullanır.</div>
+        <div class="ticker-text">Sadece 2023 yılında, sahte kargo ve banka SMS'leri yüzünden dünya çapında <b>milyarlarca dolar</b> maddi kayıp yaşanmıştır.</div>
+        <div class="ticker-text">SMS oltalama (Smishing) saldırıları son 2 yılda <b>%300'ün üzerinde artış</b> göstererek en tehlikeli mobil tehdit olmuştur.</div>
+        <div class="ticker-text">Dolandırıcılar genellikle <b>tatil günleri ve mesai saatleri dışında</b> SMS atarak kurbanın kurumları arayıp teyit etmesini engeller.</div>
+    </div>
+</div>
+"""
+st.sidebar.markdown(dinamik_kutu_html, unsafe_allow_html=True)
+
+st.sidebar.info("👨‍💻 **Proje Geliştiricileri:**\n\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
 
 
 # --- SAYFA 1: KARŞILAMA EKRANI ---
@@ -84,7 +143,7 @@ if st.session_state.sayfa == "🏠 Karşılama Ekranı":
             st.session_state.sayfa = "🛡️ SMS Analizörü"
             st.rerun()
 
-# --- SAYFA 2: SMS ANALİZÖRÜ ---
+# --- SAYFA 2: SMS ANALİZÖR ---
 elif st.session_state.sayfa == "🛡️ SMS Analizörü":
     st.title("🛡️ Akıllı SMS Analizörü")
     
@@ -194,7 +253,7 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                 for g in gerekceler:
                     st.markdown(g)
 
-# --- SAYFA 3: SİSTEME KATKI SAĞLA ---
+# --- SAYFA 3, 4, 5 (Aynı Kaldı) ---
 elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
     st.title("📥 Veri Setine Katkıda Bulunun")
     st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sisteme dahil edilecektir.")
@@ -216,7 +275,6 @@ elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
                 yeni_veri.to_csv("onay_bekleyenler.csv", mode="a", header=False, index=False)
             st.success("✅ Mesajınız başarıyla yönetici onay havuzuna gönderildi!")
 
-# --- SAYFA 4: YZ VE SKORLAMA ---
 elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     st.title("🧠 Yapay Zeka ve Skorlama Altyapısı")
     st.markdown("""
@@ -230,7 +288,6 @@ elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     Mesaj içerisinde tespit edilen her bağlantı, sistem tarafından "Beyaz Liste" (Whitelist) taramasından geçirilir. Yabancı bir alan adı tespit edilirse, sistem arka planda bir DNS sorgusu çalıştırarak dolandırıcı sunucunun **IP adresini** tespit edip raporlar.
     """)
 
-# --- SAYFA 5: ADMİN PANELİ ---
 elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
     st.title("🔒 Yönetici (Admin) Paneli")
     girilen_sifre = st.text_input("Lütfen Yönetici Şifresini Giriniz:", type="password")
