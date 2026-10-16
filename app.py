@@ -49,7 +49,7 @@ if st.sidebar.button("👨‍💻 Admin Paneli", use_container_width=True):
     st.session_state.sayfa = "👨‍💻 Admin Paneli"
 
 st.sidebar.divider()
-st.sidebar.info("Proje Sahipleri:\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
+st.sidebar.info("Proje Geliştiricileri:\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
 
 
 # --- SAYFA 1: KARŞILAMA EKRANI ---
