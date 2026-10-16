@@ -3,9 +3,8 @@ import pandas as pd
 import re
 import random
 import os
-import socket  # IP Adresi çözümlemek için eklendi
+import socket
 
-# İnternet yavaşlığında sistemin kilitlenmemesi için IP aramasına 2 saniye sınır koyuyoruz
 socket.setdefaulttimeout(2.0) 
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -33,14 +32,14 @@ model, df = modeli_yukle()
 KATEGORILER = {
     "kargo": ["ptt", "mng", "yurtiçi", "aras", "teslim", "adres", "kargonuz", "iade"],
     "icra_hukuk": ["icra", "dava", "uzlaştırma", "adliye", "sevk", "hapis", "tazminat", "savcılık", "ceza"],
-    "banka_finans": ["bloke", "kredi kartı", "hesap", "şüpheli", "iptal", "ziraat", "garanti"],
+    "banka_finans": ["bloke", "kredi kartı", "hesap", "şüpheli", "iptal", "ziraat", "garanti", "akbank"],
     "para_talebi": ["iban", "hesaba yatır", "ödeme", "tl", "bedeli", "masraf", "para transferi"]
 }
 
 if "sayfa" not in st.session_state:
     st.session_state.sayfa = "🏠 Karşılama Ekranı"
 
-# --- YAN MENÜ ---
+# --- YAN MENÜ VE DİNAMİK İSTATİSTİK ---
 st.sidebar.title("📌 Navigasyon")
 if st.sidebar.button("🏠 Karşılama Ekranı", use_container_width=True):
     st.session_state.sayfa = "🏠 Karşılama Ekranı"
@@ -54,7 +53,22 @@ if st.sidebar.button("👨‍💻 Admin Paneli", use_container_width=True):
     st.session_state.sayfa = "👨‍💻 Admin Paneli"
 
 st.sidebar.divider()
-st.sidebar.info("Proje Sahipleri:\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
+st.sidebar.info("👨‍💻 Proje Sahipleri:\n- Muzaffer Alp Ergülcü\n- Oğuzhan Uysal")
+
+# --- YENİ BÖLÜM: DİNAMİK SİBER GÜVENLİK İSTATİSTİKLERİ ---
+st.sidebar.divider()
+st.sidebar.subheader("💡 Biliyor muydunuz?")
+istatistikler = [
+    "Dünya genelinde siber saldırıların %80'inden fazlası sosyal mühendislik ve oltalama (phishing) yöntemleriyle başlar.",
+    "Kullanıcıların SMS ile gelen oltalama (Smishing) linklerine tıklama oranı, e-postalara göre 3 kat daha fazladır.",
+    "İnsanların %90'ı gelen bir SMS'i ilk 3 dakika içerisinde okur. Dolandırıcılar bu aciliyet refleksini kullanır.",
+    "Sadece 2023 yılında, sahte kargo ve banka SMS'leri yüzünden dünya çapında milyarlarca dolar maddi kayıp yaşanmıştır.",
+    "SMS oltalama (Smishing) saldırıları son 2 yılda %300'ün üzerinde artış göstererek en tehlikeli mobil tehdit haline gelmiştir.",
+    "Dolandırıcılar genellikle tatil günleri ve mesai saatleri dışında (akşamları) SMS atarak kurbanın kurumları arayıp teyit etmesini engeller."
+]
+# Her sayfa yenilendiğinde veya butona basıldığında rastgele bir istatistik seçilir
+st.sidebar.warning(random.choice(istatistikler))
+
 
 # --- SAYFA 1: KARŞILAMA EKRANI ---
 if st.session_state.sayfa == "🏠 Karşılama Ekranı":
@@ -109,7 +123,6 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
             risk_skoru = 0
             mesaj_lower = mesaj_girdisi.lower()
 
-            # --- YENİ BÖLÜM: BEYAZ LİSTE VE IP ÇÖZÜMLEME SİSTEMİ ---
             guvenli_domainler = ["youtube.com", "youtu.be", "google.com", "instagram.com", "turkiye.gov.tr", "edu.tr", "whatsapp.com", "github.com", "twitter.com"]
             kisaltilmis_linkler = ["bit.ly", "tinyurl.com", "t.co", "ow.ly", "cutt.ly", "is.gd"]
             
@@ -121,16 +134,13 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
 
             if bulunan_linkler:
                 for link in bulunan_linkler:
-                    # Domaini temizle
                     domain = link.replace("https://", "").replace("http://", "").replace("www.", "").split('/')[0]
                     
-                    # Beyaz Liste Kontrolü
                     if any(guvenli in domain for guvenli in guvenli_domainler):
                         guvenli_link_var = True
                         gerekceler.append(f"🌐 **Güvenilir Bağlantı:** '{domain}' adresi sistemin güvenilir beyaz listesinde (Whitelist) yer almaktadır.")
                     else:
                         tehlikeli_link_var = True
-                        # IP Çözümleme
                         try:
                             ip_adresi = socket.gethostbyname(domain)
                             ip_detay = f"Sunucu IP: {ip_adresi}"
@@ -144,7 +154,6 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                             gerekceler.append(f"🔗 **Bilinmeyen Bağlantı:** Doğrulanmamış bir web sitesine ({domain}) yönlendirme yapılıyor. ({ip_detay})")
                             risk_skoru += 45
 
-            # Kural 2: Kelime Analizi
             for kategori, kelimeler in KATEGORILER.items():
                 if any(kelime in mesaj_lower for kelime in kelimeler):
                     if kategori == "icra_hukuk":
@@ -157,10 +166,8 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                         gerekceler.append("💸 **Para/Ödeme Talebi:** IBAN veya para transferi isteniyor.")
                         risk_skoru += 35
 
-            # Kural 3: Yapay Zeka
             ml_tahmin = model.predict([mesaj_girdisi])[0]
             if ml_tahmin == 1:
-                # EĞER SADECE GÜVENLİ LİNK VARSA VE BAŞKA RİSK YOKSA YZ'NİN ÖNYARGISINI EZ (Override)
                 if guvenli_link_var and not tehlikeli_link_var and risk_skoru == 0:
                     gerekceler.append("🧠 **Yapay Zeka Notu:** Mesaj yapısı şüpheli bulunsa da, içindeki bağlantı resmi bir kuruma ait olduğu için YZ riski sıfırlandı.")
                     risk_skoru = 0
@@ -187,7 +194,7 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
                 for g in gerekceler:
                     st.markdown(g)
 
-# --- SAYFA 3, 4, 5 (Aynı Kaldı) ---
+# --- SAYFA 3: SİSTEME KATKI SAĞLA ---
 elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
     st.title("📥 Veri Setine Katkıda Bulunun")
     st.markdown("Yapay zekayı daha akıllı hale getirmek için yeni mesajlar önerebilirsiniz. Gönderdiğiniz mesajlar **yönetici onayından geçtikten sonra** sisteme dahil edilecektir.")
@@ -209,6 +216,7 @@ elif st.session_state.sayfa == "📥 Sisteme Katkı Sağla":
                 yeni_veri.to_csv("onay_bekleyenler.csv", mode="a", header=False, index=False)
             st.success("✅ Mesajınız başarıyla yönetici onay havuzuna gönderildi!")
 
+# --- SAYFA 4: YZ VE SKORLAMA ---
 elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     st.title("🧠 Yapay Zeka ve Skorlama Altyapısı")
     st.markdown("""
@@ -222,6 +230,7 @@ elif st.session_state.sayfa == "🧠 YZ ve Skorlama":
     Mesaj içerisinde tespit edilen her bağlantı, sistem tarafından "Beyaz Liste" (Whitelist) taramasından geçirilir. Yabancı bir alan adı tespit edilirse, sistem arka planda bir DNS sorgusu çalıştırarak dolandırıcı sunucunun **IP adresini** tespit edip raporlar.
     """)
 
+# --- SAYFA 5: ADMİN PANELİ ---
 elif st.session_state.sayfa == "👨‍💻 Admin Paneli":
     st.title("🔒 Yönetici (Admin) Paneli")
     girilen_sifre = st.text_input("Lütfen Yönetici Şifresini Giriniz:", type="password")
