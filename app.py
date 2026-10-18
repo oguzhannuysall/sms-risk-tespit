@@ -54,31 +54,31 @@ st.set_page_config(page_title="SMS Güvenlik Asistanı", page_icon="🛡️", la
 
 st.markdown("""
 <style>
-.stApp {background: radial-gradient(circle at top right, #131B2E 0%, #0B0F19 60%, #070A10 100%); color: #F0F4F8;}
-.status-bar {background: rgba(16,24,39,0.75); backdrop-filter: blur(12px); border: 1px solid rgba(0,242,254,0.2);
+/* Renkler Streamlit'in seçili temasına (açık/koyu/sistem) uyum sağlasın diye arka plan ve yazı rengi
+   zorlanmaz; kartlar yarı saydam nötr tonlar kullanır, vurgu renkleri iki temada da okunur. */
+.status-bar {background: rgba(128,128,128,0.10); border: 1px solid rgba(8,145,178,0.35);
   border-radius: 14px; padding: 12px 22px; margin-bottom: 24px; display: flex; justify-content: space-between;
-  align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.35);}
-.status-badge {display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #00f2fe;
-  background: rgba(0,242,254,0.1); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(0,242,254,0.25);}
+  align-items: center;}
+.status-badge {display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #0891b2;
+  background: rgba(8,145,178,0.12); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(8,145,178,0.35);}
 div.stButton > button:first-child {border-radius: 12px; font-weight: 600; background: linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);
-  color: #fff; transition: all 0.25s ease; border: 1px solid rgba(0,242,254,0.2); padding: 0.55rem 1rem; box-shadow: 0 4px 14px rgba(0,0,0,0.25);}
-div.stButton > button:first-child:hover {transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,242,254,0.35); border-color: #00f2fe;}
-div.stButton > button[kind="primary"] {background: linear-gradient(135deg,#00c6ff 0%,#0072ff 100%); font-size: 16px; font-weight: 700;}
-div[data-testid="metric-container"] {background: rgba(22,27,34,0.65); backdrop-filter: blur(10px);
-  border: 1px solid rgba(0,242,254,0.2); padding: 18px 22px; border-radius: 16px;}
-.stTextArea textarea, .stTextInput input {border-radius: 14px !important; border: 1px solid rgba(0,242,254,0.25) !important;
-  background-color: rgba(17,22,29,0.85) !important; color: #FFF !important; font-size: 15px !important; padding: 14px !important;}
-[data-testid="stSidebar"] {background: linear-gradient(180deg,#0D1117 0%,#111827 100%); border-right: 1px solid rgba(0,242,254,0.12);}
-.highlight-box {background: rgba(22,27,34,0.8); border: 1px solid rgba(0,242,254,0.25); border-radius: 14px; padding: 18px;
+  color: #fff; transition: all 0.25s ease; border: 1px solid rgba(0,242,254,0.2); padding: 0.55rem 1rem; box-shadow: 0 4px 14px rgba(0,0,0,0.2);}
+div.stButton > button:first-child:hover {transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,114,255,0.35); border-color: #00c6ff; color: #fff;}
+div.stButton > button[kind="primary"] {background: linear-gradient(135deg,#00c6ff 0%,#0072ff 100%); font-size: 16px; font-weight: 700; color: #fff;}
+div[data-testid="metric-container"] {background: rgba(128,128,128,0.10); border: 1px solid rgba(8,145,178,0.30);
+  padding: 18px 22px; border-radius: 16px;}
+.stTextArea textarea, .stTextInput input {border-radius: 14px !important; border: 1px solid rgba(8,145,178,0.45) !important;
+  font-size: 15px !important; padding: 14px !important;}
+.highlight-box {background: rgba(128,128,128,0.10); border: 1px solid rgba(8,145,178,0.40); border-radius: 14px; padding: 18px;
   font-size: 15.5px; line-height: 1.8; margin-top: 10px; margin-bottom: 18px; overflow-wrap: anywhere;}
-.danger-tag {background-color: rgba(255,75,75,0.25); color: #ff8080; padding: 3px 8px; border-radius: 6px;
-  border: 1px solid rgba(255,75,75,0.65); font-weight: 700;}
-.safe-tag {background-color: rgba(0,242,254,0.15); color: #00f2fe; padding: 3px 8px; border-radius: 6px;
-  border: 1px solid rgba(0,242,254,0.45); font-weight: 700;}
-.thermo-bg {width: 100%; background-color: #1f2937; border-radius: 12px; height: 22px; overflow: hidden; margin-top: 10px;
-  border: 1px solid rgba(255,255,255,0.12);}
+.danger-tag {background-color: rgba(255,75,75,0.18); color: #e53935; padding: 3px 8px; border-radius: 6px;
+  border: 1px solid rgba(229,57,53,0.65); font-weight: 700;}
+.safe-tag {background-color: rgba(8,145,178,0.15); color: #0891b2; padding: 3px 8px; border-radius: 6px;
+  border: 1px solid rgba(8,145,178,0.55); font-weight: 700;}
+.thermo-bg {width: 100%; background-color: rgba(128,128,128,0.25); border-radius: 12px; height: 22px; overflow: hidden; margin-top: 10px;
+  border: 1px solid rgba(128,128,128,0.35);}
 .thermo-fill {height: 100%; border-radius: 12px; transition: width 0.5s ease-out;}
-.reason-card {background: rgba(255,255,255,0.03); border-left: 4px solid #00f2fe; padding: 12px 16px;
+.reason-card {background: rgba(128,128,128,0.08); border-left: 4px solid #0891b2; padding: 12px 16px;
   border-radius: 0 10px 10px 0; margin-bottom: 10px; font-size: 14.5px;}
 </style>
 """, unsafe_allow_html=True)
@@ -350,7 +350,7 @@ def sayfa_analiz():
         durum = "TEHLİKELİ" if risk >= 70 else ("ŞÜPHELİ" if risk >= 30 else "GÜVENLİ")
         st.markdown(f"""
         <div class="thermo-bg"><div class="thermo-fill" style="width:{risk}%;background-color:{renk};"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#cbd5e1;margin-top:6px;font-weight:600;">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;opacity:0.85;margin-top:6px;font-weight:600;">
           <span>Durum: <b style="color:{renk};">{durum}</b></span><span>%{risk}</span></div>
         """, unsafe_allow_html=True)
     with c2:
@@ -669,7 +669,7 @@ st.sidebar.markdown("""
 n_kayit = len(veri_oku())
 st.markdown(f"""
 <div class="status-bar">
-  <div style="font-weight:700;font-size:14px;color:#e2e8f0;">🛡️ <b>KTO Karatay Üniversitesi</b> | SMS Güvenlik Asistanı</div>
+  <div style="font-weight:700;font-size:14px;">🛡️ <b>KTO Karatay Üniversitesi</b> | SMS Güvenlik Asistanı</div>
   <div style="display:flex;gap:10px;">
     <span class="status-badge">🟢 Sistem Aktif ({n_kayit} Kayıt)</span>
     <span class="status-badge">🧠 Kural + ML</span>
