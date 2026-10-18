@@ -189,7 +189,7 @@ def mesaji_analiz_et(mesaj):
 # 4. DURUM, ÖRNEKLER, CALLBACK'LER
 # ======================================================================
 for anahtar, deger in {"aktif_mesaj": "", "otomatik_analiz": False, "son_sonuc": None, "admin_giris": False,
-                       "aktif_yonetici": "", "fb_sayac": 0, "oneri_sayac": 0}.items():
+                       "aktif_yonetici": "", "fb_sayac": 0, "oneri_sayac": 0, "sayfa": "ana"}.items():
     st.session_state.setdefault(anahtar, deger)
 
 # Sayfa değişince widget durumunun silinmemesi için (yazılan mesaj kaybolmasın)
@@ -303,7 +303,8 @@ def sayfa_ana():
     _, col2, _ = st.columns([1, 2, 1])
     with col2:
         if st.button("🚀 HEMEN MESAJ TEST ET", type="primary", width="stretch"):
-            st.switch_page(analiz_sayfasi)
+            st.session_state.sayfa = "analiz"
+            st.rerun()
 
 
 def sayfa_analiz():
@@ -609,14 +610,22 @@ def sayfa_admin():
 
 
 # ======================================================================
-# 6. NAVİGASYON, YAN MENÜ, ÜST ÇUBUK
+# 6. YAN MENÜ, ÜST ÇUBUK, SAYFA YÖNLENDİRME
 # ======================================================================
-ana_sayfa = st.Page(sayfa_ana, title="Ana Sayfa", icon="🏠", url_path="ana-sayfa", default=True)
-analiz_sayfasi = st.Page(sayfa_analiz, title="SMS Kontrol Aracı", icon="🛡️", url_path="sms-kontrol")
-oneri_sayfasi = st.Page(sayfa_oneri, title="Mesaj Öner", icon="📥", url_path="mesaj-oner")
-sistem_sayfasi = st.Page(sayfa_sistem, title="Sistem Nasıl Çalışır?", icon="🧠", url_path="sistem")
-admin_sayfasi = st.Page(sayfa_admin, title="Yönetici Paneli", icon="🔒", url_path="yonetici")
-pg = st.navigation([ana_sayfa, analiz_sayfasi, oneri_sayfasi, sistem_sayfasi, admin_sayfasi])
+SAYFALAR = {
+    "ana": ("🏠 Ana Sayfa", sayfa_ana),
+    "analiz": ("🛡️ SMS Kontrol Aracı", sayfa_analiz),
+    "oneri": ("📥 Mesaj Öner", sayfa_oneri),
+    "sistem": ("🧠 Sistem Nasıl Çalışır?", sayfa_sistem),
+    "admin": ("👨‍💻 Yönetici Paneli", sayfa_admin),
+}
+
+st.sidebar.title("📌 Menü")
+for anahtar, (etiket, _) in SAYFALAR.items():
+    if st.sidebar.button(etiket, key=f"menu_{anahtar}", width="stretch"):
+        st.session_state.sayfa = anahtar
+
+st.sidebar.divider()
 
 st.sidebar.markdown("""
 <style>
@@ -668,4 +677,4 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-pg.run()
+SAYFALAR.get(st.session_state.sayfa, SAYFALAR["ana"])[1]()
