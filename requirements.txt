@@ -1,4 +1,5 @@
-   streamlit>=1.50
-   pandas
-   scikit-learn
-   anthropic
+streamlit>=1.50
+pandas>=2.0
+scikit-learn>=1.4
+tzdata
+pytest
