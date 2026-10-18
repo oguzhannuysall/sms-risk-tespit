@@ -50,41 +50,99 @@ DB_YOLU = "sms_guvenlik.db"
 CLAUDE_MODEL = "claude-sonnet-4-5"
 
 # ======================================================================
-# 1. SAYFA AYARLARI VE CSS
+# 1. SAYFA AYARLARI VE DİNAMİK TEMA (DARK / LIGHT UYUMLU) CSS
 # ======================================================================
 st.set_page_config(page_title="SMS Güvenlik Asistanı", page_icon="🛡️", layout="wide")
 
 st.markdown("""
 <style>
-.stApp {background: radial-gradient(circle at top right, #131B2E 0%, #0B0F19 60%, #070A10 100%); color: #F0F4F8;}
-.status-bar {background: rgba(16,24,39,0.75); backdrop-filter: blur(12px); border: 1px solid rgba(0,242,254,0.2);
-  border-radius: 14px; padding: 12px 22px; margin-bottom: 24px; display: flex; justify-content: space-between;
-  align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.35);}
-.status-badge {display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #00f2fe;
-  background: rgba(0,242,254,0.1); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(0,242,254,0.25);}
-div.stButton > button:first-child {border-radius: 12px; font-weight: 600; background: linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);
-  color: #fff; transition: all 0.25s ease; border: 1px solid rgba(0,242,254,0.2); padding: 0.55rem 1rem; box-shadow: 0 4px 14px rgba(0,0,0,0.25);}
-div.stButton > button:first-child:hover {transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,242,254,0.35); border-color: #00f2fe;}
-div.stButton > button[kind="primary"] {background: linear-gradient(135deg,#00c6ff 0%,#0072ff 100%); font-size: 16px; font-weight: 700;}
-div[data-testid="metric-container"] {background: rgba(22,27,34,0.65); backdrop-filter: blur(10px);
-  border: 1px solid rgba(0,242,254,0.2); padding: 18px 22px; border-radius: 16px;}
-.stTextArea textarea, .stTextInput input {border-radius: 14px !important; border: 1px solid rgba(0,242,254,0.25) !important;
-  background-color: rgba(17,22,29,0.85) !important; color: #FFF !important; font-size: 15px !important; padding: 14px !important;}
-[data-testid="stSidebar"] {background: linear-gradient(180deg,#0D1117 0%,#111827 100%); border-right: 1px solid rgba(0,242,254,0.12);}
-.highlight-box {background: rgba(22,27,34,0.8); border: 1px solid rgba(0,242,254,0.25); border-radius: 14px; padding: 18px;
-  font-size: 15.5px; line-height: 1.8; margin-top: 10px; margin-bottom: 18px; white-space: pre-wrap;}
-.danger-tag {background-color: rgba(255,75,75,0.25); color: #ff8080; padding: 3px 8px; border-radius: 6px;
-  border: 1px solid rgba(255,75,75,0.65); font-weight: 700;}
-.safe-tag {background-color: rgba(0,242,254,0.15); color: #00f2fe; padding: 3px 8px; border-radius: 6px;
-  border: 1px solid rgba(0,242,254,0.45); font-weight: 700;}
-.thermo-bg {width: 100%; background-color: #1f2937; border-radius: 12px; height: 22px; overflow: hidden; margin-top: 10px;
-  border: 1px solid rgba(255,255,255,0.12);}
+.stApp {
+  background: radial-gradient(circle at top right, var(--secondary-background-color) 0%, var(--background-color) 70%);
+  color: var(--text-color);
+}
+.status-bar {
+  background: var(--secondary-background-color);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 180, 216, 0.3);
+  border-radius: 14px; padding: 12px 22px; margin-bottom: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+.status-title {
+  font-weight: 700; font-size: 14px; color: var(--text-color);
+}
+.status-badge {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+  color: color-mix(in srgb, var(--text-color) 25%, #00b4d8);
+  background: rgba(0, 180, 216, 0.12); padding: 5px 12px; border-radius: 20px;
+  border: 1px solid rgba(0, 180, 216, 0.3);
+}
+div.stButton > button:first-child {
+  border-radius: 12px; font-weight: 600;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  color: #ffffff !important; transition: all 0.25s ease;
+  border: 1px solid rgba(0, 180, 216, 0.25); padding: 0.55rem 1rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+div.stButton > button:first-child:hover {
+  transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0, 180, 216, 0.35); border-color: #00b4d8;
+}
+div.stButton > button[kind="primary"] {
+  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); font-size: 16px; font-weight: 700; color: #ffffff !important;
+}
+div[data-testid="metric-container"] {
+  background: var(--secondary-background-color); backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 180, 216, 0.25); padding: 18px 22px; border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+.stTextArea textarea, .stTextInput input {
+  border-radius: 14px !important; border: 1px solid rgba(0, 180, 216, 0.35) !important;
+  background-color: var(--secondary-background-color) !important; color: var(--text-color) !important;
+  font-size: 15px !important; padding: 14px !important;
+}
+[data-testid="stSidebar"] {
+  background: var(--secondary-background-color);
+  border-right: 1px solid rgba(0, 180, 216, 0.18);
+}
+.highlight-box {
+  background: var(--secondary-background-color); color: var(--text-color);
+  border: 1px solid rgba(0, 180, 216, 0.3); border-radius: 14px; padding: 18px;
+  font-size: 15.5px; line-height: 1.8; margin-top: 10px; margin-bottom: 18px; white-space: pre-wrap;
+}
+.danger-tag {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: color-mix(in srgb, var(--text-color) 25%, #ef4444);
+  padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.6); font-weight: 700;
+}
+.safe-tag {
+  background-color: rgba(0, 180, 216, 0.15);
+  color: color-mix(in srgb, var(--text-color) 25%, #00b4d8);
+  padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(0, 180, 216, 0.5); font-weight: 700;
+}
+.thermo-bg {
+  width: 100%;
+  background-color: color-mix(in srgb, var(--text-color) 15%, var(--secondary-background-color));
+  border-radius: 12px; height: 22px; overflow: hidden; margin-top: 10px;
+  border: 1px solid rgba(0, 180, 216, 0.2);
+}
 .thermo-fill {height: 100%; border-radius: 12px; transition: width 0.5s ease-out;}
-.reason-card {background: rgba(255,255,255,0.03); border-left: 4px solid #00f2fe; padding: 12px 16px;
-  border-radius: 0 10px 10px 0; margin-bottom: 10px; font-size: 14.5px;}
-.claude-card {background: rgba(168,192,255,0.07); border: 1px solid rgba(168,192,255,0.35); border-radius: 14px;
-  padding: 16px 18px; margin: 10px 0 18px 0; font-size: 14.5px; line-height: 1.7;}
-.claude-card b {color: #a8c0ff;}
+.thermo-label {
+  display: flex; justify-content: space-between; font-size: 12.5px;
+  color: var(--text-color); opacity: 0.85; margin-top: 6px; font-weight: 600;
+}
+.reason-card {
+  background: var(--secondary-background-color); color: var(--text-color);
+  border-left: 4px solid #00b4d8; padding: 12px 16px;
+  border-radius: 0 10px 10px 0; margin-bottom: 10px; font-size: 14.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.claude-card {
+  background: color-mix(in srgb, #6366f1 10%, var(--secondary-background-color));
+  color: var(--text-color);
+  border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 14px;
+  padding: 16px 18px; margin: 10px 0 18px 0; font-size: 14.5px; line-height: 1.7;
+}
+.claude-card b {color: color-mix(in srgb, var(--text-color) 25%, #6366f1);}
 </style>
 """, unsafe_allow_html=True)
 
@@ -572,23 +630,34 @@ st.sidebar.divider()
 
 st.sidebar.markdown("""
 <style>
-.info-box {background: linear-gradient(135deg,#0f2027 0%,#203a43 50%,#2c5364 100%); border-radius: 14px; padding: 16px; color: #e0e6ed;
-  font-size: 13px; line-height: 1.5; box-shadow: 0 8px 25px rgba(0,0,0,0.4); text-align: center; height: 195px; display: flex;
-  flex-direction: column; position: relative; overflow: hidden; border: 1px solid rgba(38,208,206,0.3); margin-bottom: 20px;}
-.info-header {font-weight: 800; font-size: 15px; margin-bottom: 8px; color: #00f2fe;}
+.info-box {
+  background: linear-gradient(135deg, color-mix(in srgb, #00b4d8 14%, var(--background-color)) 0%, var(--background-color) 100%);
+  border-radius: 14px; padding: 16px; color: var(--text-color);
+  font-size: 13px; line-height: 1.5; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center; height: 195px; display: flex;
+  flex-direction: column; position: relative; overflow: hidden; border: 1px solid rgba(0, 180, 216, 0.35); margin-bottom: 20px;
+}
+.info-header {font-weight: 800; font-size: 15px; margin-bottom: 8px; color: color-mix(in srgb, var(--text-color) 20%, #00b4d8);}
 .text-container {position: relative; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center;}
 .ticker-text {position: absolute; width: 100%; opacity: 0; animation: fadeCycle 60s infinite;}
 .ticker-text:nth-child(1){animation-delay:0s}.ticker-text:nth-child(2){animation-delay:10s}.ticker-text:nth-child(3){animation-delay:20s}
 .ticker-text:nth-child(4){animation-delay:30s}.ticker-text:nth-child(5){animation-delay:40s}.ticker-text:nth-child(6){animation-delay:50s}
 @keyframes fadeCycle {0%{opacity:0;transform:translateY(8px)}3%{opacity:1;transform:translateY(0)}15%{opacity:1;transform:translateY(0)}
   18%{opacity:0;transform:translateY(-8px)}100%{opacity:0;transform:translateY(-8px)}}
-.dev-card {background: linear-gradient(135deg,#161B22 0%,#0D1117 100%); border-radius: 14px; padding: 16px;
-  border: 1px solid rgba(78,67,118,0.5); box-shadow: 0 6px 20px rgba(0,0,0,0.3);}
-.dev-title {color: #a8c0ff; font-size: 13px; font-weight: 800; margin-bottom: 12px; text-transform: uppercase;}
-.dev-item {display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,0.03);
-  border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #00f2fe;}
-.dev-name {color: #fff; font-size: 13.5px; font-weight: 600;}
-.dev-badge {margin-left: auto; font-size: 10px; background: rgba(0,242,254,0.15); color: #00f2fe; padding: 2px 6px; border-radius: 4px; font-weight: 700;}
+.dev-card {
+  background: var(--background-color); border-radius: 14px; padding: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.35); box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.dev-title {color: color-mix(in srgb, var(--text-color) 25%, #6366f1); font-size: 13px; font-weight: 800; margin-bottom: 12px; text-transform: uppercase;}
+.dev-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  background: var(--secondary-background-color);
+  border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #00b4d8;
+}
+.dev-name {color: var(--text-color); font-size: 13.5px; font-weight: 600;}
+.dev-badge {
+  margin-left: auto; font-size: 10px; background: rgba(0, 180, 216, 0.15);
+  color: color-mix(in srgb, var(--text-color) 20%, #00b4d8); padding: 2px 6px; border-radius: 4px; font-weight: 700;
+}
 </style>
 <div class="info-box">
   <div class="info-header">💡 Biliyor musunuz?</div>
@@ -605,7 +674,7 @@ st.sidebar.markdown("""
   <div class="dev-title">⚡ Geliştirici Ekibi</div>
   <div class="dev-item"><span>👨‍💻</span><span class="dev-name">Muzaffer Alp Ergülcü</span><span class="dev-badge">Yazılım</span></div>
   <div class="dev-item" style="margin-bottom:0;border-left-color:#a8c0ff;"><span>👨‍💻</span><span class="dev-name">Oğuzhan Uysal</span>
-    <span class="dev-badge" style="color:#a8c0ff;background:rgba(168,192,255,0.15);">Güvenlik</span></div>
+    <span class="dev-badge" style="color:color-mix(in srgb, var(--text-color) 25%, #6366f1);background:rgba(99,102,241,0.15);">Güvenlik</span></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -621,7 +690,7 @@ df = veri_oku()
 claude_rozet = "🤖 Claude Aktif" if (claude_istemci() and st.session_state.claude_acik) else "🤖 Claude Kapalı"
 st.markdown(f"""
 <div class="status-bar">
-  <div style="font-weight:700;font-size:14px;color:#e2e8f0;">🛡️ <b>KTO Karatay Üniversitesi</b> | SMS Güvenlik Asistanı</div>
+  <div class="status-title">🛡️ <b>KTO Karatay Üniversitesi</b> | SMS Güvenlik Asistanı</div>
   <div style="display:flex;gap:10px;">
     <span class="status-badge">🟢 Sistem Aktif ({len(df)} Kayıt)</span>
     <span class="status-badge">{claude_rozet}</span>
@@ -692,7 +761,7 @@ elif st.session_state.sayfa == "🛡️ SMS Analizörü":
             durum = "TEHLİKELİ" if risk >= 70 else ("ŞÜPHELİ" if risk >= 30 else "GÜVENLİ")
             st.markdown(f"""
             <div class="thermo-bg"><div class="thermo-fill" style="width:{risk}%;background-color:{renk};"></div></div>
-            <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#cbd5e1;margin-top:6px;font-weight:600;">
+            <div class="thermo-label">
               <span>Durum: <b style="color:{renk};">{durum}</b></span><span>%{risk}</span></div>
             """, unsafe_allow_html=True)
         with c2:
